@@ -107,3 +107,72 @@
 .contact-section{padding:65px 0}
 @media(max-width:900px){.hero{height:640px;min-height:640px}.hero-grid{padding-top:80px}.hero-copy{padding-top:75px}.division-grid{grid-template-columns:repeat(2,1fr)}.about-grid{gap:35px}}
 @media(max-width:680px){.hero{height:760px;min-height:760px;padding-top:70px}.hero-grid{padding-top:40px}.hero-copy{padding:60px 0 170px}.hero-copy .eyebrow{font-size:9px;letter-spacing:2px;gap:7px}.hero h1{font-size:clamp(43px,11vw,58px);letter-spacing:-2.6px}.hero-intro{font-size:16px}.hero-actions{gap:10px}.button{padding:14px 18px;font-size:12px}.hero-photo{object-position:59% center}.summit-art:after{background:linear-gradient(90deg,rgba(4,19,34,.94),rgba(4,19,34,.5) 75%),linear-gradient(0deg,rgba(4,18,31,.95),transparent 60%)}.pillar-grid{grid-template-columns:repeat(2,1fr);padding:12px 0 16px}.pillar{padding:9px 8px;gap:10px;border-right:0;border-bottom:1px solid rgba(255,255,255,.18)}.pillar:nth-child(odd){border-right:1px solid rgba(255,255,255,.18)}.pillar:nth-child(n+3){border-bottom:0}.pillar-icon{font-size:28px;width:30px}.pillar b{font-size:14px}.pillar small{font-size:10px}.about-section{padding:45px 0}.about-grid{grid-template-columns:1fr;gap:25px}.office-visual{height:220px}.division-grid{grid-template-columns:repeat(2,1fr);gap:10px}.division-card{padding:16px;min-height:205px}.division-card h3{font-size:14px}.division-card p{font-size:11px}.section-heading h2{font-size:31px}}
+
+/* Premium NISCO reference match — responsive final refinement */
+:root{--navy:#071827;--navy2:#102b43;--gold:#edbd52;--gold2:#f6d27c;--ink:#101f31;--paper:#f3f5f9}
+body{font-family:"Inter",Arial,sans-serif}
+h1,h2,h3,.main-nav,.button,.brand{font-family:"Montserrat","Inter",Arial,sans-serif}
+.site-header{height:82px;background:linear-gradient(180deg,rgba(4,17,30,.28),transparent);border-bottom:0}
+.brand-logo{width:172px!important;max-height:none}
+.hero{height:600px;min-height:600px;padding-top:82px;position:relative;background:#071827}
+.hero-grid{height:100%;min-height:0;padding-top:0;display:block;position:relative}
+.summit-art{position:absolute;inset:0;width:100%;height:100%;margin:0;z-index:0;overflow:hidden}
+.summit-art .hero-photo{width:100%;height:100%;object-fit:cover;object-position:center 43%}
+.summit-art:after{background:linear-gradient(90deg,rgba(4,17,30,.96) 0%,rgba(4,17,30,.86) 31%,rgba(4,17,30,.30) 58%,rgba(4,17,30,.03) 100%),linear-gradient(0deg,rgba(4,17,30,.94) 0%,rgba(4,17,30,.08) 37%,rgba(4,17,30,.05) 100%)}
+.hero-copy{position:relative;z-index:2;max-width:590px;padding:110px 0 0}
+.hero-copy .eyebrow{font-family:"Montserrat",sans-serif;font-size:11px;letter-spacing:4px;display:flex;align-items:center;gap:13px;margin-bottom:24px}
+.hero-copy .eyebrow span{display:inline;width:auto;height:auto;background:none;margin:0}
+.hero-copy .eyebrow i{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--gold)}
+.hero h1{font-family:"Montserrat",sans-serif;font-size:clamp(58px,6.1vw,80px);font-weight:800;line-height:1.02;letter-spacing:-3.6px;margin:0 0 25px}
+.hero h1 em{color:#fff;font-style:normal;position:relative}
+.hero h1 em:after{content:"";position:absolute;left:8%;bottom:-9px;width:65%;height:5px;border-radius:50%;background:var(--gold);transform:rotate(-4deg)}
+.hero-intro{font-family:"Inter",sans-serif;font-size:18px;line-height:1.55;max-width:510px;color:#eef2f6;margin-bottom:28px}
+.hero-actions{gap:16px}
+.button{font-family:"Montserrat",sans-serif;font-size:13px;font-weight:800;padding:16px 25px}
+.button-gold{background:var(--gold);box-shadow:0 8px 24px rgba(237,189,82,.16)}
+.button-outline{border:1.5px solid rgba(255,255,255,.8);background:rgba(4,17,30,.18)}
+.hero-note,.summit-caption{display:none}
+.pillars{position:absolute;bottom:0;left:0;right:0;z-index:3;background:linear-gradient(0deg,rgba(4,17,30,.96),rgba(4,17,30,.38));border:0}
+.pillar-grid{padding:20px 0 22px}
+.pillar{padding:4px 24px;gap:16px}
+.pillar-icon{color:var(--gold);font-size:36px}
+.pillar b{font-family:"Montserrat",sans-serif;font-size:16px;font-weight:800}
+.pillar small{font-family:"Inter",sans-serif;font-size:12px;line-height:1.45;color:#e0e6ed}
+.about-section{padding:44px 0;background:#fff}
+.about-grid{grid-template-columns:.78fr 1.22fr;gap:64px}
+.about-title{font-family:"Montserrat",sans-serif;font-weight:800;font-size:44px!important}
+.section-copy>p:not(.eyebrow){font-family:"Inter",sans-serif;font-size:14px;line-height:1.65}
+.office-visual{height:275px;border-radius:15px}
+.divisions-section{padding:35px 0 64px;background:#f0f2f7}
+.section-heading{margin-bottom:30px}
+.section-heading h2{font-family:"Montserrat",sans-serif;font-weight:800;font-size:38px}
+.division-card{background:#fff;border-radius:16px;box-shadow:0 8px 28px rgba(13,31,49,.045);padding:20px 21px;min-height:220px}
+.division-card h3{font-family:"Montserrat",sans-serif;font-weight:800;font-size:15px}
+.division-card p{font-family:"Inter",sans-serif;font-size:12px;line-height:1.55}
+@media(max-width:900px){.hero{height:620px;min-height:620px}.hero-copy{padding-top:105px}.hero h1{font-size:clamp(52px,7vw,68px)}.pillar{padding:4px 13px}.about-grid{gap:34px}}
+@media(max-width:680px){
+.site-header{height:70px;background:rgba(4,17,30,.78);backdrop-filter:blur(10px)}
+.nav-wrap{height:70px}.brand-logo{width:132px!important}
+.hero{height:690px;min-height:690px;padding-top:70px;overflow:hidden}
+.hero-grid{height:100%;padding-top:0}
+.summit-art{position:absolute;inset:0;width:100%;height:100%;margin:0}
+.summit-art .hero-photo{object-position:59% center}
+.summit-art:after{background:linear-gradient(90deg,rgba(4,17,30,.91) 0%,rgba(4,17,30,.68) 55%,rgba(4,17,30,.30) 100%),linear-gradient(0deg,rgba(4,17,30,.98) 0%,rgba(4,17,30,.08) 57%)}
+.hero-copy{padding:92px 0 0;max-width:100%}
+.hero-copy .eyebrow{font-size:8px;letter-spacing:2.2px;gap:8px;margin-bottom:20px}
+.hero h1{font-size:clamp(42px,10.6vw,54px);line-height:1.04;letter-spacing:-2.5px;margin-bottom:22px}
+.hero h1 em:after{height:4px;bottom:-7px}
+.hero-intro{font-size:14px;line-height:1.6;max-width:390px;margin-bottom:23px}
+.hero-actions{gap:9px;flex-wrap:nowrap}
+.button{font-size:10px;padding:13px 14px;white-space:nowrap}
+.button span{margin-left:7px}.button-outline{border-width:1px}
+.pillars{bottom:0}.pillar-grid{padding:10px 0 12px}
+.pillar{padding:10px 7px;gap:8px}.pillar-icon{width:28px;font-size:25px}
+.pillar b{font-size:12px}.pillar small{font-size:9px;line-height:1.35}
+.about-section{padding:42px 0}.about-grid{grid-template-columns:1fr;gap:23px}
+.about-title{font-size:36px!important}.office-visual{height:205px}
+.divisions-section{padding:36px 0 50px}.section-heading h2{font-size:31px}
+.division-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.division-card{padding:15px 13px;min-height:190px}
+.division-card h3{font-size:12px;line-height:1.35}.division-card p{font-size:10px;line-height:1.5}
+}
