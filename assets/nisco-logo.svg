@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 74" role="img" aria-labelledby="title">
-<title id="title">NISCO</title>
-<path d="M78 18 C103 -1 137 0 163 13" fill="none" stroke="#edbd52" stroke-width="8" stroke-linecap="round"/>
-<text x="5" y="62" font-family="Montserrat, Arial, sans-serif" font-size="58" font-style="italic" font-weight="900" letter-spacing="-3" fill="#ffffff">NISCO</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 430 170" role="img" aria-labelledby="nisco-title">
+<title id="nisco-title">NISCO</title>
+<path d="M82 43 C132 -3 237 -12 294 27 C232 8 153 17 111 58 C99 65 87 56 82 43Z" fill="#edbd52"/>
+<text x="8" y="151" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="112" font-style="italic" font-weight="900" letter-spacing="-6">NISCO</text>
 </svg>
