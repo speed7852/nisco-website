@@ -39,3 +39,46 @@ const year = document.getElementById("year");
 if (year) year.textContent = new Date().getFullYear();
 
 // Before launch, replace CONTACT_EMAIL_PLACEHOLDER in index.html with your business email.
+
+
+// Subtle scroll reveals: premium, restrained, and accessible.
+(() => {
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduceMotion || !("IntersectionObserver" in window)) return;
+
+  const revealTargets = [
+    [".about-section .section-copy", "left"],
+    [".about-section .about-visual", "right"],
+    [".section-heading", "up"],
+    [".division-card", "up"],
+    [".approach-section .container > div:first-child", "left"],
+    [".approach-point", "right"],
+    [".contact-panel > div", "left"],
+    [".contact-panel > a", "right"],
+    [".footer-main > div", "up"]
+  ];
+
+  document.documentElement.classList.add("js-motion-enabled");
+  const elements = [];
+  revealTargets.forEach(([selector, direction]) => {
+    document.querySelectorAll(selector).forEach((element, index) => {
+      element.classList.add("reveal");
+      if (direction !== "up") element.dataset.reveal = direction;
+      if (element.matches(".division-card,.approach-point")) {
+        element.style.transitionDelay = (Math.min(index % 4, 3) * 90) + "ms";
+      }
+      elements.push(element);
+    });
+  });
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -45px 0px" });
+
+  elements.forEach(element => observer.observe(element));
+})();
