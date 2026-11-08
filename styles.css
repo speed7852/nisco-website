@@ -322,3 +322,54 @@ h1,h2,h3,.main-nav,.button,.brand{font-family:"Montserrat","Inter",Arial,sans-se
   .division-card h3{font-size:12px}
   .division-card p{font-size:10px}
 }
+
+
+/* Strong tablet breakpoint for browsers using desktop-site viewport scaling */
+@media(max-width:1100px){
+  .site-header{height:72px!important;background:rgba(4,17,30,.90)!important;backdrop-filter:blur(10px)}
+  .nav-wrap{height:72px!important;width:calc(100% - 44px)!important}
+  .brand-logo{width:136px!important}
+  .menu-toggle{display:flex!important;flex-direction:column;gap:5px;padding:10px;background:transparent;border:0;z-index:15}
+  .menu-toggle span{display:block;width:25px;height:2px;background:#fff;border-radius:2px}
+  .main-nav{display:none!important;position:absolute;top:72px;left:0;right:0;width:100%;padding:14px 22px 22px;background:#071827;flex-direction:column;align-items:stretch;gap:0;z-index:14;box-shadow:0 14px 25px rgba(0,0,0,.24)}
+  .main-nav.open{display:flex!important}
+  .main-nav>a:not(.nav-cta){height:auto!important;min-height:46px;padding:13px 0!important;display:flex;align-items:center;border-bottom:1px solid rgba(255,255,255,.10)!important}
+  .main-nav>a.active:not(.nav-cta):after{left:0!important;bottom:4px!important;transform:none!important;width:42px!important;height:4px!important}
+  .main-nav .nav-cta{margin-top:14px;text-align:center}
+  .hero{height:720px!important;min-height:720px!important;padding-top:72px!important}
+  .hero-grid{width:calc(100% - 52px)!important;height:100%;padding-top:0!important}
+  .hero-copy{max-width:570px;padding:100px 0 0!important}
+  .hero h1{font-size:clamp(48px,6.5vw,68px)!important;line-height:1.04;letter-spacing:-2.8px}
+  .hero-intro{font-size:16px!important;max-width:480px;line-height:1.55}
+  .hero-actions{display:flex;flex-wrap:wrap;gap:11px}
+  .button{font-size:12px!important;padding:14px 18px!important}
+  .summit-art .hero-photo{object-position:62% center!important}
+  .pillars{bottom:0!important;top:auto!important}
+  .pillar-grid{width:calc(100% - 44px)!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px 0 14px!important}
+  .pillar{min-width:0;padding:10px 9px!important;gap:9px;border-right:0!important;border-bottom:1px solid rgba(255,255,255,.16)!important}
+  .pillar:nth-child(odd){border-right:1px solid rgba(255,255,255,.16)!important}
+  .pillar:nth-child(n+3){border-bottom:0!important}
+  .pillar-icon{width:30px;font-size:27px}
+  .pillar b{font-size:13px}
+  .pillar small{font-size:10px}
+  .about-grid{grid-template-columns:1fr!important;gap:25px!important}
+  .office-visual{height:230px}
+  .division-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px}
+  .division-card{min-width:0;min-height:190px;padding:17px 15px}
+  .division-card h3{font-size:13px}
+  .division-card p{font-size:11px}
+}
+@media(max-width:420px){
+  .hero{height:740px!important;min-height:740px!important}
+  .hero-grid{width:calc(100% - 36px)!important}
+  .hero-copy{padding-top:84px!important}
+  .hero-copy .eyebrow{font-size:8px;letter-spacing:2px;gap:7px}
+  .hero h1{font-size:clamp(40px,10.8vw,48px)!important;letter-spacing:-2.2px}
+  .hero-intro{font-size:14px!important}
+  .hero-actions{gap:8px}
+  .button{font-size:10px!important;padding:12px 13px!important}
+  .pillar-grid{width:calc(100% - 28px)!important}
+  .pillar{padding:9px 5px!important;gap:7px}
+  .pillar b{font-size:12px}
+  .pillar small{font-size:9px}
+}
