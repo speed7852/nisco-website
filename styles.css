@@ -212,3 +212,59 @@ h1,h2,h3,.main-nav,.button,.brand{font-family:"Montserrat","Inter",Arial,sans-se
  .main-nav>a:not(.nav-cta):hover:after{left:0;bottom:0;transform:none;width:48px;height:4px}
  .summit-art .hero-photo{object-position:68% center}
 }
+
+
+/* Final responsive hero art: NISCO golden ascent, no people */
+.hero{isolation:isolate}
+.summit-art{inset:0!important;width:100%!important;height:100%!important;overflow:hidden;background:#071827}
+.summit-art .hero-photo{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center center!important}
+.summit-art:after{
+ background:
+  linear-gradient(90deg,rgba(4,17,30,.94) 0%,rgba(4,17,30,.80) 30%,rgba(4,17,30,.32) 58%,rgba(4,17,30,.04) 100%),
+  linear-gradient(0deg,rgba(4,17,30,.94) 0%,rgba(4,17,30,.08) 36%,transparent 72%)!important;
+}
+.hero-grid{width:min(1450px,calc(100% - 64px))}
+.hero-copy{max-width:620px}
+.hero h1{max-width:700px}
+.pillar-grid{width:min(1450px,calc(100% - 64px))}
+@media(min-width:1500px){
+ .hero{height:min(780px,72vw)!important;min-height:650px!important}
+ .hero-copy{padding-top:125px}
+ .hero h1{font-size:clamp(72px,5.2vw,92px)}
+}
+@media(max-width:900px){
+ .hero{height:650px!important;min-height:650px!important}
+ .hero-grid{width:calc(100% - 48px)}
+ .hero-copy{padding-top:110px;max-width:560px}
+ .hero h1{font-size:clamp(52px,7.4vw,68px)}
+ .summit-art .hero-photo{object-position:57% center!important}
+ .pillar-grid{width:calc(100% - 48px)}
+}
+@media(max-width:680px){
+ .hero{height:760px!important;min-height:760px!important;padding-top:70px!important}
+ .hero-grid{width:calc(100% - 40px);padding-top:0!important}
+ .hero-copy{padding:86px 0 0!important;max-width:100%}
+ .hero h1{font-size:clamp(42px,10.5vw,56px)!important;line-height:1.05;letter-spacing:-2.4px}
+ .hero-intro{font-size:14px!important;line-height:1.6;max-width:360px}
+ .hero-actions{display:flex;flex-wrap:wrap;gap:10px}
+ .button{font-size:11px!important;padding:13px 15px!important}
+ .summit-art .hero-photo{object-position:62% center!important}
+ .summit-art:after{
+  background:
+   linear-gradient(90deg,rgba(4,17,30,.91) 0%,rgba(4,17,30,.69) 58%,rgba(4,17,30,.30) 100%),
+   linear-gradient(0deg,rgba(4,17,30,.98) 0%,rgba(4,17,30,.28) 55%,rgba(4,17,30,.10) 100%)!important;
+ }
+ .pillar-grid{width:calc(100% - 32px);grid-template-columns:repeat(2,minmax(0,1fr));padding:10px 0 14px}
+ .pillar{min-width:0;padding:10px 7px;gap:8px}
+ .pillar b{font-size:12px}
+ .pillar small{font-size:9px}
+ .about-grid,.division-grid{min-width:0}
+}
+@media(max-width:360px){
+ .hero{height:790px!important;min-height:790px!important}
+ .hero h1{font-size:40px!important}
+ .hero-actions .button{font-size:10px!important;padding:12px 11px!important}
+ .pillar-icon{width:24px;font-size:22px}
+ .pillar b{font-size:11px}
+ .pillar small{font-size:8px}
+}
