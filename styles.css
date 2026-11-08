@@ -512,3 +512,47 @@ img{max-width:100%}
   .hero-grid{min-height:510px}
   .hero-copy{padding-top:105px!important}
 }
+
+
+/* NISCO premium motion system */
+:root{--motion-ease:cubic-bezier(.22,1,.36,1)}
+html{scroll-behavior:smooth;scroll-padding-top:92px}
+.main-nav>a:not(.nav-cta){transition:color .3s var(--motion-ease),opacity .3s var(--motion-ease)}
+.main-nav>a:not(.nav-cta):after{transition:width .35s var(--motion-ease),transform .35s var(--motion-ease),opacity .25s ease}
+.main-nav>a:not(.nav-cta):hover{opacity:1;color:var(--gold2)}
+.main-nav>a:not(.nav-cta):hover:after{width:100%}
+.nav-cta,.button,.text-link,.card-link{transition:transform .35s var(--motion-ease),box-shadow .35s ease,background-color .3s ease,color .3s ease,border-color .3s ease}
+.nav-cta:hover,.button:hover{transform:translateY(-3px)}
+.button-gold:hover,.nav-cta:hover{box-shadow:0 12px 30px rgba(233,185,79,.28);background:var(--gold2)}
+.button-outline:hover{background:rgba(255,255,255,.12);border-color:var(--gold2)}
+.division-card{transition:transform .55s var(--motion-ease),box-shadow .55s var(--motion-ease),border-color .35s ease}
+.division-card:hover{transform:translateY(-8px);box-shadow:0 22px 48px rgba(14,36,57,.12);border-color:rgba(233,185,79,.55)}
+.card-icon{transition:transform .45s var(--motion-ease),background .35s ease}
+.division-card:hover .card-icon{transform:translateY(-3px) rotate(-5deg);background:#f5e8c9}
+.card-link span{display:inline-block;transition:transform .35s var(--motion-ease)}
+.card-link:hover span{transform:translate(4px,-3px)}
+.pillar{transition:background-color .35s ease}
+.pillar:hover{background:rgba(255,255,255,.045)}
+.brand-logo{transition:transform .4s var(--motion-ease),filter .4s ease}
+.brand:hover .brand-logo{transform:translateY(-2px);filter:drop-shadow(0 5px 12px rgba(233,185,79,.18))}
+.hero h1 em:after{transform-origin:left;animation:niscoUnderline 1s .45s var(--motion-ease) both}
+.hero-copy>*{animation:niscoHeroIn .85s var(--motion-ease) both}
+.hero-copy .eyebrow{animation-delay:.08s}
+.hero-copy h1{animation-delay:.18s}
+.hero-copy .hero-intro{animation-delay:.3s}
+.hero-copy .hero-actions{animation-delay:.42s}
+.pillar{animation:niscoHeroIn .7s .5s var(--motion-ease) both}
+.pillar:nth-child(2){animation-delay:.58s}.pillar:nth-child(3){animation-delay:.66s}.pillar:nth-child(4){animation-delay:.74s}
+@keyframes niscoHeroIn{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes niscoUnderline{from{transform:scaleX(0) rotate(-3deg)}to{transform:scaleX(1) rotate(-3deg)}}
+.js-motion-enabled .reveal{opacity:0;transform:translateY(28px);transition:opacity .8s var(--motion-ease),transform .8s var(--motion-ease)}
+.js-motion-enabled .reveal.is-visible{opacity:1;transform:translateY(0)}
+.js-motion-enabled .reveal[data-reveal="left"]{transform:translateX(-28px)}
+.js-motion-enabled .reveal[data-reveal="left"].is-visible{transform:translateX(0)}
+.js-motion-enabled .reveal[data-reveal="right"]{transform:translateX(28px)}
+.js-motion-enabled .reveal[data-reveal="right"].is-visible{transform:translateX(0)}
+@media(prefers-reduced-motion:reduce){
+ html{scroll-behavior:auto}
+ *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+ .js-motion-enabled .reveal{opacity:1;transform:none}
+}
