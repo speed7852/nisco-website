@@ -176,3 +176,39 @@ h1,h2,h3,.main-nav,.button,.brand{font-family:"Montserrat","Inter",Arial,sans-se
 .division-card{padding:15px 13px;min-height:190px}
 .division-card h3{font-size:12px;line-height:1.35}.division-card p{font-size:10px;line-height:1.5}
 }
+
+/* Exact NISCO brand treatment: curved gold swoosh, wordmark and selected navigation */
+.brand-logo{width:172px!important;height:auto!important;max-height:none!important;object-fit:contain}
+.footer-brand{display:inline-flex;align-items:center;min-height:66px}
+.footer-brand .brand-logo{width:158px!important}
+.office-sign img{width:100%;height:auto;display:block}
+.main-nav>a:not(.nav-cta){position:relative;border:0!important}
+.main-nav>a.active:not(.nav-cta){color:#fff!important}
+.main-nav>a.active:not(.nav-cta):after{
+ content:"";position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+ width:88%;height:6px;border-radius:50% 50% 45% 45%;
+ background:linear-gradient(180deg,#f8d77e 0%,#edbd52 65%,#b98324 100%);
+ box-shadow:0 1px 5px rgba(237,189,82,.35)
+}
+.main-nav>a:not(.nav-cta):hover{color:#fff;opacity:1}
+.main-nav>a:not(.nav-cta):hover:after{
+ content:"";position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+ width:88%;height:5px;border-radius:50%;background:rgba(237,189,82,.72)
+}
+.main-nav>a.active:hover:after{background:linear-gradient(180deg,#f8d77e,#edbd52)}
+.summit-art .hero-photo{object-fit:cover;object-position:64% center}
+.summit-art{background:#071827}
+.summit-art:after{pointer-events:none}
+.site-footer .footer-brand .brand-logo{width:158px!important}
+@media(max-width:900px){
+ .brand-logo{width:150px!important}
+ .main-nav>a.active:not(.nav-cta):after,.main-nav>a:not(.nav-cta):hover:after{bottom:12px}
+ .summit-art .hero-photo{object-position:66% center}
+}
+@media(max-width:680px){
+ .brand-logo{width:132px!important}
+ .footer-brand .brand-logo,.site-footer .footer-brand .brand-logo{width:142px!important}
+ .main-nav>a.active:not(.nav-cta):after{left:0;bottom:0;transform:none;width:48px;height:4px}
+ .main-nav>a:not(.nav-cta):hover:after{left:0;bottom:0;transform:none;width:48px;height:4px}
+ .summit-art .hero-photo{object-position:68% center}
+}
