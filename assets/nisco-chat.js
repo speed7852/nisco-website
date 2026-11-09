@@ -9,7 +9,7 @@
   if (!panel || !launcher || !form) return;
 
   // Set this to the deployed NISCO AI Worker URL after deployment.
-  const API_URL = "https://nisco-ai.YOUR-SUBDOMAIN.workers.dev/chat";
+  const API_URL = "https://nisco-ai.speedhome7852.workers.dev/chat";
   const history = [];
   let busy = false;
 
