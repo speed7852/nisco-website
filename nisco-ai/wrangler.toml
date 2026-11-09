@@ -5,6 +5,7 @@ workers_dev = true
 
 [vars]
 ALLOWED_ORIGIN = "https://nisco-website.pages.dev"
+BREVO_SENDER_EMAIL = "nisco.in@outlook.com"
 
 [[d1_databases]]
 binding = "DB"
