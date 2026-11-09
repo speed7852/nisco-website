@@ -182,16 +182,22 @@ export default {
         return json({ reply: "Please reply Yes if you agree to share these enquiry details with the NISCO team, or No if you do not." }, 200, allowed);
       }
 
-      const result = await captureLead({
-        name: "",
-        email,
-        phone,
-        preferred_contact: email ? "email" : "phone",
-        service,
-        summary: summary || service,
-        timeline: "",
-        consent: true
-      }, env);
+      let result;
+      try {
+        result = await captureLead({
+          name: "",
+          email,
+          phone,
+          preferred_contact: email ? "email" : "phone",
+          service,
+          summary: summary || service,
+          timeline: "",
+          consent: true
+        }, env);
+      } catch (error) {
+        console.error("NISCO lead capture failed", error);
+        return json({ reply: "I couldn't save the enquiry just now. Your details haven't been submitted. Please try again shortly." }, 200, allowed);
+      }
       if (result.ok) {
         return json({
           reply: "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided.",
