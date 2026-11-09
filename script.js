@@ -83,32 +83,47 @@ if (year) year.textContent = new Date().getFullYear();
   elements.forEach(element => observer.observe(element));
 })();
 
-/* Prepare an enquiry email for the visitor to review and send. */
+/* Submit consultation enquiries securely to the NISCO Worker. */
 (() => {
   const form = document.getElementById("nisco-enquiry-form");
   if (!form) return;
   const note = document.getElementById("enquiry-form-note");
+  const submit = form.querySelector('button[type="submit"]');
   const config = window.NISCO_CONFIG || {};
   document.querySelectorAll(".package-cta[data-service]").forEach(link => link.addEventListener("click", () => {
     const select = document.getElementById("enquiry-service");
     if (select) select.value = link.dataset.service;
   }));
-  form.addEventListener("submit", event => {
+  form.addEventListener("submit", async event => {
     event.preventDefault();
     if (!form.reportValidity()) return;
     const values = new FormData(form);
-    const message = [
-      "Hello NISCO, I would like to discuss a business requirement.",
-      "Name: " + values.get("name"),
-      "Business: " + (values.get("business") || "Not provided"),
-      "Service: " + values.get("service"),
-      "Budget: " + values.get("budget"),
-      "Requirement: " + values.get("requirement"),
-      "Location: Chennai, India"
-    ].join("\n");
-    const email = String(config.email || "nisco.in@outlook.com");
-    const url = "mailto:" + email + "?subject=" + encodeURIComponent("NISCO business enquiry: " + values.get("service")) + "&body=" + encodeURIComponent(message);
-    window.location.href = url;
-    if (note) note.textContent = "Your email app should open with a draft enquiry. Review the details and press Send to contact NISCO."
+    const payload = {
+      name: String(values.get("name") || "").trim(),
+      email: String(values.get("email") || "").trim(),
+      business: String(values.get("business") || "").trim(),
+      service: String(values.get("service") || "").trim(),
+      budget: String(values.get("budget") || "").trim(),
+      requirement: String(values.get("requirement") || "").trim(),
+      consent: document.getElementById("enquiry-consent")?.checked === true,
+      website: String(values.get("website") || "")
+    };
+    if (submit) { submit.disabled = true; submit.textContent = "Sending…"; }
+    if (note) note.textContent = "Sending your enquiry securely to NISCO…";
+    try {
+      const response = await fetch((config.workerUrl || "https://nisco-ai.speedhome7852.workers.dev") + "/enquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+      if (!response.ok || result.success !== true) throw new Error(result.error || "Unable to submit your enquiry.");
+      form.reset();
+      if (note) note.textContent = "Thank you! Your enquiry has been sent to NISCO. We’ll reply to the email address you provided.";
+    } catch (error) {
+      if (note) note.textContent = error.message || "We couldn't send your enquiry. Please try again shortly.";
+    } finally {
+      if (submit) { submit.disabled = false; submit.textContent = "Submit Enquiry →"; }
+    }
   });
 })();
