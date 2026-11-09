@@ -112,34 +112,40 @@ export default {
 
     const messages = [{ role: "system", content: SYSTEM_PROMPT }, ...body.messages];
     try {
-      for (let step = 0; step < 4; step++) {
-        const data = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
-          messages,
-          tools: [{
-            name: "capture_lead",
-            description: LEAD_TOOL.function.description,
-            parameters: LEAD_TOOL.function.parameters
-          }],
-          max_tokens: 650,
-          temperature: 0.35
-        });
-        const calls = Array.isArray(data.tool_calls) ? data.tool_calls : [];
-        if (!calls.length) {
-          const reply = data.response || data.content || "How else can I help with your NISCO enquiry?";
-          return json({ reply: String(reply) }, 200, allowed);
-        }
-
-        for (const call of calls) {
-          if (call.name !== "capture_lead") continue;
-          const result = await captureLead(call.arguments || {}, env);
-          messages.push({
-            role: "assistant",
-            content: JSON.stringify({ tool: call.name, arguments: call.arguments || {} })
-          });
-          messages.push({ role: "tool", content: JSON.stringify(result) });
-        }
+      const data = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+        messages,
+        tools: [{
+          name: "capture_lead",
+          description: LEAD_TOOL.function.description,
+          parameters: LEAD_TOOL.function.parameters
+        }],
+        max_tokens: 650,
+        temperature: 0.35
+      });
+      const calls = Array.isArray(data.tool_calls) ? data.tool_calls : [];
+      const call = calls.find(item => (item.name || item.function?.name) === "capture_lead");
+      if (!call) {
+        const reply = data.response || data.content || "How else can I help with your NISCO enquiry?";
+        return json({ reply: String(reply) }, 200, allowed);
       }
-      return json({ reply: "I've gathered the details. Is there anything else you'd like to add to your enquiry?" }, 200, allowed);
+
+      let args = call.arguments ?? call.function?.arguments ?? {};
+      if (typeof args === "string") {
+        try { args = JSON.parse(args); } catch { args = {}; }
+      }
+      const result = await captureLead(args, env);
+      if (result.ok) {
+        return json({ reply: "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided." }, 200, allowed);
+      }
+      let reply;
+      if (result.message === "Consent is required before saving.") {
+        reply = "Before I save this enquiry, may I share the details you've provided with the NISCO team so they can contact you?";
+      } else if (result.message === "A contact email or phone number is required.") {
+        reply = "What email address or phone number should the NISCO team use to contact you?";
+      } else {
+        reply = "Could you briefly describe the service you need and what you would like NISCO to help you achieve?";
+      }
+      return json({ reply }, 200, allowed);
     } catch (error) {
       console.error("NISCO AI error", error);
       return json({ error: "Something went wrong. Please try again shortly." }, 500, allowed);
