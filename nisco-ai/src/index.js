@@ -103,7 +103,7 @@ export default {
     if (new URL(request.url).pathname !== "/chat" || request.method !== "POST") {
       return json({ error: "Not found" }, 404, allowed);
     }
-    if (!env.OPENAI_API_KEY) return json({ error: "NISCO AI is not configured yet." }, 503, allowed);
+    if (!env.AI) return json({ error: "Cloudflare Workers AI binding is not configured yet." }, 503, allowed);
     if (!env.DB) return json({ error: "Enquiry storage is not configured yet." }, 503, allowed);
 
     let body;
@@ -113,46 +113,33 @@ export default {
     const messages = [{ role: "system", content: SYSTEM_PROMPT }, ...body.messages];
     try {
       for (let step = 0; step < 4; step++) {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": "Bearer " + env.OPENAI_API_KEY,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: env.OPENAI_MODEL || "gpt-4.1-mini",
-            messages,
-            tools: [LEAD_TOOL],
-            tool_choice: "auto",
-            temperature: 0.35,
-            max_tokens: 650
-          })
+        const data = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+          messages,
+          tools: [{
+            name: "capture_lead",
+            description: LEAD_TOOL.function.description,
+            parameters: LEAD_TOOL.function.parameters
+          }],
+          max_tokens: 650,
+          temperature: 0.35
         });
-        if (!response.ok) {
-          const detail = await response.text();
-          console.error("OpenAI request failed", response.status, detail.slice(0, 500));
-          return json({ error: "I’m having trouble responding right now. Please try again in a moment." }, 502, allowed);
+        const calls = Array.isArray(data.tool_calls) ? data.tool_calls : [];
+        if (!calls.length) {
+          const reply = data.response || data.content || "How else can I help with your NISCO enquiry?";
+          return json({ reply: String(reply) }, 200, allowed);
         }
-        const data = await response.json();
-        const assistant = data.choices?.[0]?.message;
-        if (!assistant) throw new Error("Empty model response");
-        messages.push(assistant);
-        const calls = assistant.tool_calls || [];
-        if (!calls.length) return json({ reply: assistant.content || "How else can I help with your NISCO enquiry?" }, 200, allowed);
 
         for (const call of calls) {
-          if (call.function?.name !== "capture_lead") {
-            messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ ok: false, message: "Tool not available." }) });
-            continue;
-          }
-          let args;
-          try { args = JSON.parse(call.function.arguments || "{}"); }
-          catch { args = {}; }
-          const result = await captureLead(args, env);
-          messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
+          if (call.name !== "capture_lead") continue;
+          const result = await captureLead(call.arguments || {}, env);
+          messages.push({
+            role: "assistant",
+            content: JSON.stringify({ tool: call.name, arguments: call.arguments || {} })
+          });
+          messages.push({ role: "tool", content: JSON.stringify(result) });
         }
       }
-      return json({ reply: "I’ve gathered the details. Is there anything else you’d like to add to your enquiry?" }, 200, allowed);
+      return json({ reply: "I've gathered the details. Is there anything else you'd like to add to your enquiry?" }, 200, allowed);
     } catch (error) {
       console.error("NISCO AI error", error);
       return json({ error: "Something went wrong. Please try again shortly." }, 500, allowed);
