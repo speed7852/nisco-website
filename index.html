@@ -182,13 +182,14 @@
         <div><p class="eyebrow dark">START WITH A CONVERSATION</p><h2>Tell us what your business needs.</h2><p>Share a few details. Your email app will prepare an enquiry for you to review and send to NISCO.</p><p class="consultation-contact"><strong>Chennai, India</strong><br><a href="mailto:nisco.in@outlook.com">nisco.in@outlook.com</a></p></div>
         <form class="enquiry-form" id="nisco-enquiry-form">
           <label for="enquiry-name">Your name</label><input id="enquiry-name" name="name" autocomplete="name" maxlength="100" required>
-          <label for="enquiry-business">Business name</label><input id="enquiry-business" name="business" autocomplete="organization" maxlength="120">
+          <label for="enquiry-email">Your email address</label><input id="enquiry-email" name="email" type="email" autocomplete="email" maxlength="254" required><label for="enquiry-business">Business name</label><input id="enquiry-business" name="business" autocomplete="organization" maxlength="120">
           <label for="enquiry-service">What do you need?</label><select id="enquiry-service" name="service" required><option value="">Select a service</option><option>Business website</option><option>Business automation</option><option>AI chatbot</option><option>Website maintenance</option><option>Other digital requirement</option></select>
           <label for="enquiry-budget">Approximate budget</label><select id="enquiry-budget" name="budget"><option value="Not sure yet">Not sure yet</option><option>Below ₹15,000</option><option>₹15,000–₹30,000</option><option>₹30,000–₹50,000</option><option>Above ₹50,000</option></select>
           <label for="enquiry-requirement">Briefly describe your requirement</label><textarea id="enquiry-requirement" name="requirement" rows="4" maxlength="1200" required></textarea>
-          <label class="consent-label"><input type="checkbox" id="enquiry-consent" required><span>I agree to prepare an email with these enquiry details so I can review and send it to NISCO.</span></label>
-          <button class="button button-gold" type="submit">Continue to Email →</button>
-          <p class="form-note" id="enquiry-form-note" aria-live="polite">Your details are not submitted automatically. Your email app opens only after you press the button, and you choose whether to send the message.</p>
+          <label class="consent-label"><input type="checkbox" id="enquiry-consent" required><span>I agree to share these details with NISCO so the team can respond to my enquiry.</span></label>
+          <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="visually-hidden">
+          <button class="button button-gold" type="submit">Submit Enquiry →</button>
+          <p class="form-note" id="enquiry-form-note" aria-live="polite">Your enquiry will be sent securely to NISCO. We will use your email address to reply.</p>
         </form>
       </div>
     </section>
