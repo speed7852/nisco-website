@@ -317,35 +317,6 @@ export default {
         return json({ reply: consentPrompt, consent_token: token }, 200, allowed);
       }
       return json({ reply: consentPrompt + " Please use the consent prompt shown above to continue." }, 200, allowed);
-      if (!affirmative) {
-        if (/^(no|no thanks|i do not consent|don't share)$/i.test(lower)) {
-          return json({ reply: "No problem. I haven't shared or saved your details. If you change your mind, let me know." }, 200, allowed);
-        }
-        return json({ reply: "Please reply Yes if you agree to share these enquiry details with the NISCO team, or No if you do not." }, 200, allowed);
-      }
-
-      try {
-        const result = await captureLead({
-          name: "",
-          email,
-          phone,
-          preferred_contact: email ? "email" : "phone",
-          service,
-          summary: summary || service,
-          timeline: "",
-          consent: true
-        }, env);
-        if (result.ok) {
-          return json({
-            reply: "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided.",
-            lead_saved: true
-          }, 200, allowed);
-        }
-        console.error("NISCO lead capture failed", result.message);
-      } catch (error) {
-        console.error("NISCO lead capture failed", error);
-      }
-      return json({ reply: "I couldn't save the enquiry just now. Your details haven't been submitted. Please try again shortly." }, 200, allowed);
     }
 
     const businessInfoReply = getBusinessInfoReply(lastUserMessage);
