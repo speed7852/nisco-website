@@ -18,3 +18,17 @@ enabled = true
 
 [ai]
 binding = "AI"
+
+[[ratelimits]]
+name = "CHAT_RATE_LIMITER"
+namespace_id = "2026111001"
+  [ratelimits.simple]
+  limit = 30
+  period = 60
+
+[[ratelimits]]
+name = "ENQUIRY_RATE_LIMITER"
+namespace_id = "2026111002"
+  [ratelimits.simple]
+  limit = 5
+  period = 60
