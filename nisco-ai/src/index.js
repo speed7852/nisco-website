@@ -164,11 +164,79 @@ export default {
         "Vary": "Origin"
       }
     });
-    if (new URL(request.url).pathname !== "/chat" || request.method !== "POST") {
+    const pathname = new URL(request.url).pathname;
+    if (request.method !== "POST" || !["/chat", "/enquiry"].includes(pathname)) {
       return json({ error: "Not found" }, 404, allowed);
     }
-    if (!env.AI) return json({ error: "Cloudflare Workers AI binding is not configured yet." }, 503, allowed);
     if (!env.DB) return json({ error: "Enquiry storage is not configured yet." }, 503, allowed);
+
+    if (pathname === "/enquiry") {
+      if (!env.BREVO_API_KEY || !env.BREVO_SENDER_EMAIL) {
+        return json({ error: "Email delivery is not configured yet. Please try again later." }, 503, allowed);
+      }
+      let enquiry;
+      try { enquiry = await request.json(); } catch { return json({ error: "Invalid enquiry." }, 400, allowed); }
+      if (enquiry.website) return json({ success: true }, 200, allowed);
+      const name = typeof enquiry.name === "string" ? enquiry.name.trim() : "";
+      const customerEmail = typeof enquiry.email === "string" ? enquiry.email.trim() : "";
+      const business = typeof enquiry.business === "string" ? enquiry.business.trim() : "";
+      const service = typeof enquiry.service === "string" ? enquiry.service.trim() : "";
+      const budget = typeof enquiry.budget === "string" ? enquiry.budget.trim() : "";
+      const requirement = typeof enquiry.requirement === "string" ? enquiry.requirement.trim() : "";
+      const emailPattern = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+      if (!name || name.length > 100 || !emailPattern.test(customerEmail) || customerEmail.length > 254 ||
+          business.length > 120 || !service || service.length > 120 || budget.length > 80 ||
+          !requirement || requirement.length > 1200 || enquiry.consent !== true) {
+        return json({ error: "Please complete the required fields and agree to share your enquiry." }, 400, allowed);
+      }
+      const details = [
+        "A new enquiry has been submitted through the NISCO website.",
+        "",
+        "Name: " + name,
+        "Customer email: " + customerEmail,
+        "Business: " + (business || "Not provided"),
+        "Service: " + service,
+        "Budget: " + (budget || "Not provided"),
+        "",
+        "Requirement:",
+        requirement,
+        "",
+        "Source: NISCO website consultation form"
+      ].join("\\n");
+      try {
+        const mailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+          method: "POST",
+          headers: {
+            "accept": "application/json",
+            "api-key": env.BREVO_API_KEY,
+            "content-type": "application/json"
+          },
+          body: JSON.stringify({
+            sender: { name: "NISCO Website", email: env.BREVO_SENDER_EMAIL },
+            to: [{ email: "nisco.in@outlook.com", name: "NISCO" }],
+            replyTo: { email: customerEmail, name },
+            subject: "New NISCO enquiry: " + service,
+            textContent: details
+          })
+        });
+        if (!mailResponse.ok) {
+          console.error("NISCO email delivery failed", mailResponse.status, (await mailResponse.text()).slice(0, 500));
+          return json({ error: "We couldn't send your enquiry just now. Please try again shortly." }, 502, allowed);
+        }
+        const messageId = (await mailResponse.json()).messageId || "";
+        await env.DB.prepare(
+          "INSERT INTO leads (id, created_at, name, email, phone, preferred_contact, service, summary, timeline, consent, source) VALUES (?, ?, ?, ?, '', 'email', ?, ?, '', 1, 'website-form')"
+        ).bind(
+          crypto.randomUUID(), new Date().toISOString(), name, customerEmail,
+          service, ("Business: " + business + " | Budget: " + budget + " | " + requirement).slice(0, 2000)
+        ).run();
+        return json({ success: true, message_id: messageId }, 200, allowed);
+      } catch (error) {
+        console.error("NISCO enquiry processing failed", error);
+        return json({ error: "We couldn't send your enquiry just now. Please try again shortly." }, 502, allowed);
+      }
+    }
+    if (!env.AI) return json({ error: "Cloudflare Workers AI binding is not configured yet." }, 503, allowed);
 
     let body;
     try { body = await request.json(); } catch { return json({ error: "Invalid request." }, 400, allowed); }
