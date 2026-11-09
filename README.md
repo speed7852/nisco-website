@@ -79,11 +79,11 @@ The homepage presents NISCO's India-focused digital services with indicative sta
 Prices are starting points only. Final scope and quotation must be confirmed in writing. Third-party costs and applicable taxes are excluded unless explicitly included.
 
 ### Contact and enquiry handling
-- Public contact: Catchnoor@live.in
-- India WhatsApp: +91 98945 77373
+- Public contact: nisco.in@outlook.com
+- Public contact email: nisco.in@outlook.com
 - Primary India sales location: Chennai
 - `assets/nisco-india-config.js` contains public contact configuration only; never place API keys or private credentials in it.
-- The website enquiry form prepares a WhatsApp message for the visitor. It does not submit automatically or write form details to D1. The visitor reviews the draft and chooses whether to send it.
+- The website enquiry form prepares an email draft for the visitor. It does not submit automatically or write form details to D1. The visitor reviews the draft and chooses whether to send it.
 - NISCO AI's existing guided lead capture remains a separate workflow using the Cloudflare Worker and D1 database.
 - Portfolio descriptions distinguish the Al Jawdah website project from the in-house NISCO AI demonstration. Do not add unverified client outcomes or testimonials.
 
