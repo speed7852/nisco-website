@@ -2,8 +2,7 @@ window.NISCO_CONFIG = Object.freeze({
   market: "India",
   city: "Chennai",
   currency: "INR",
-  email: "Catchnoor@live.in",
-  whatsapp: "919894577373",
+  email: "nisco.in@outlook.com",
   pricing: Object.freeze({
     website: 15000,
     automation: 15000,
