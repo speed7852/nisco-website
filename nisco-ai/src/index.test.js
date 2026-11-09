@@ -4,22 +4,37 @@ import worker from "./index.js";
 
 function harness() {
   const inserts = [];
+  const challenges = new Map();
   const env = {
     ALLOWED_ORIGIN: "https://nisco-website.pages.dev",
+    CHAT_RATE_LIMITER: { limit: async () => ({ success: true }) },
+    ENQUIRY_RATE_LIMITER: { limit: async () => ({ success: true }) },
     AI: { run: async () => ({ response: "NISCO can help with that." }) },
-    DB: { prepare(sql) { return { bind(...values) { return { async run() { inserts.push({ sql, values }); return { success: true }; } }; } }; } }
+    DB: { prepare(sql) { return {
+      bind(...values) {
+        return {
+          async run() {
+            if (sql.startsWith("INSERT INTO lead_consent_challenges")) challenges.set(values[0], { id: values[0], expires_at: values[2], email: values[3], phone: values[4], service: values[5], summary: values[6], used_at: null });
+            if (sql.startsWith("UPDATE lead_consent_challenges")) { const item = challenges.get(values[1]); if (item && !item.used_at) { item.used_at = values[0]; return { success: true, meta: { changes: 1 } }; } return { success: true, meta: { changes: 0 } }; }
+            if (sql.startsWith("INSERT INTO leads")) inserts.push({ sql, values });
+            return { success: true, meta: { changes: 1 } };
+          },
+          async first() { return challenges.get(values[0]) || null; }
+        };
+      }
+    }; } }
   };
-  async function send(messages, origin = env.ALLOWED_ORIGIN) {
+  async function send(messages, origin = env.ALLOWED_ORIGIN, consentToken = "") {
     const request = new Request("https://worker.test/chat", {
       method: "POST", headers: { Origin: origin, "Content-Type": "application/json" },
-      body: JSON.stringify({ messages })
+      body: JSON.stringify({ messages, consent_token: consentToken || undefined })
     });
     const response = await worker.fetch(request, env);
     const raw = await response.text();
     let body; try { body = JSON.parse(raw); } catch { body = { error: raw }; }
     return { status: response.status, body };
   }
-  return { send, inserts, env };
+  return { send, inserts, challenges, env };
 }
 const starter = "I need a website. Please guide me through a website enquiry and ask one question at a time. Start by asking what type of website I need.";
 const firstQuestion = "Absolutely. What type of website do you need—for example, a business website, online store, portfolio, or something else?";
