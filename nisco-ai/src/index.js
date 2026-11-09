@@ -154,12 +154,12 @@ export default {
         return json({ reply: firstQuestion }, 200, allowed);
       }
 
-      const emailMatch = [...userMessages].reverse().map(m => m.content.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/i)).find(Boolean);
-      const phoneMatch = [...userMessages].reverse().map(m => m.content.match(/(?:\\+?\\d[\\d\\s().-]{7,}\\d)/)).find(Boolean);
+      const emailMatch = [...userMessages].reverse().map(m => m.content.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)).find(Boolean);
+      const phoneMatch = [...userMessages].reverse().map(m => m.content.match(/(?:\+?\d[\d\s().-]{7,}\d)/)).find(Boolean);
       const email = emailMatch ? emailMatch[0] : "";
       const phone = phoneMatch ? phoneMatch[0].trim() : "";
       const requirementMessages = userMessages
-        .filter(m => m !== starter && !m.content.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/i) && !m.content.match(/(?:\\+?\\d[\\d\\s().-]{7,}\d)/))
+        .filter(m => m !== starter && !m.content.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i) && !m.content.match(/(?:\+?\d[\d\s().-]{7,}\d)/))
         .map(m => m.content.trim())
         .filter(m => m && !/^(yes|yes please|i agree|i consent|okay|ok|sure|no|no thanks|thanks|thank you)$/i.test(m));
       const summary = requirementMessages.join(" | ").slice(0, 2000);
