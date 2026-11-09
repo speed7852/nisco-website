@@ -1,0 +1,17 @@
+name = "nisco-ai"
+main = "src/index.js"
+compatibility_date = "2026-11-09"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGIN = "https://nisco-website.pages.dev"
+OPENAI_MODEL = "gpt-4.1-mini"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nisco-ai-leads"
+database_id = "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[observability]
+enabled = true
