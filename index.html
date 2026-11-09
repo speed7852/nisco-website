@@ -133,6 +133,27 @@
   <section class="visually-hidden" id="insights"><h2>Insights</h2></section>
   </main>
 
+  <aside class="nisco-chat" aria-label="NISCO AI assistant">
+    <section class="nisco-chat-panel" id="nisco-chat-panel" aria-labelledby="nisco-chat-title" hidden>
+      <header class="nisco-chat-header">
+        <div><span class="nisco-chat-status"></span><div><strong id="nisco-chat-title">NISCO AI</strong><small>Your business guide</small></div></div>
+        <button class="nisco-chat-close" type="button" aria-label="Close chat">×</button>
+      </header>
+      <div class="nisco-chat-messages" id="nisco-chat-messages" aria-live="polite">
+        <div class="nisco-chat-message assistant">Hello! I’m the NISCO AI assistant. I can help you explore our services, understand your requirements and prepare a business enquiry. What would you like to work on?</div>
+      </div>
+      <div class="nisco-chat-suggestions" id="nisco-chat-suggestions">
+        <button type="button">I need a website</button><button type="button">Grow my business</button><button type="button">Automate a process</button>
+      </div>
+      <form class="nisco-chat-form" id="nisco-chat-form">
+        <label class="visually-hidden" for="nisco-chat-input">Message NISCO AI</label>
+        <textarea id="nisco-chat-input" rows="1" maxlength="2000" placeholder="Write your message..." required></textarea>
+        <button type="submit" aria-label="Send message">↑</button>
+      </form>
+      <p class="nisco-chat-disclaimer">AI-generated guidance. Please don’t share passwords or sensitive personal information.</p>
+    </section>
+    <button class="nisco-chat-launcher" type="button" aria-expanded="false" aria-controls="nisco-chat-panel"><span class="nisco-chat-launch-icon">✦</span><span>Ask NISCO AI</span></button>
+  </aside>
   <footer class="site-footer">
     <div class="container footer-main">
       <div><a class="brand footer-brand" href="#top"><img src="assets/nisco-logo.svg" alt="NISCO" class="brand-logo"></a><p>Built to Rise. Driven to Grow.</p></div>
@@ -141,5 +162,6 @@
     <div class="container footer-bottom"><span>© <span id="year"></span> NISCO. All rights reserved.</span><span>Technology · Business · Growth</span></div>
   </footer>
   <script src="script.js"></script>
+  <script src="assets/nisco-chat.js" defer></script>
 </body>
 </html>
