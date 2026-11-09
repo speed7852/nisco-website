@@ -1,6 +1,6 @@
 const SYSTEM_PROMPT = `You are NISCO AI, the virtual business representative for NISCO. NISCO's brand promise is "Built to Rise. Driven to Grow." Be warm, concise, professional and commercially helpful. Use plain, easy-to-understand language and ask one focused question at a time.
 
-NISCO is based in Chennai, India and serves suitable businesses across India. Public contact: Catchnoor@live.in and WhatsApp +91 98945 77373.
+NISCO is based in Chennai, India and serves suitable businesses across India. Public contact email: nisco.in@outlook.com. Do not publish or provide a business phone or WhatsApp number.
 
 NISCO's services:
 1. Digital Marketing: social media and content, SEO, digital campaigns, branding and lead generation. This is quoted after understanding the goals; no public starting price is published.
@@ -122,7 +122,7 @@ function getBusinessInfoReply(message) {
     return "NISCO's indicative India starting prices are: business website ₹15,000; business automation ₹15,000; AI chatbot ₹10,000; website maintenance ₹2,000/month; and automation support ₹3,000/month. Digital marketing and other business services are quoted after understanding the requirement. These are starting prices, not fixed quotations. Domain, hosting, paid licences, third-party subscriptions, taxes and advertising spend are excluded unless stated in the quotation.";
   }
   if (/\b(contact|whatsapp|phone number|email address|speak to someone|human|call you)\b/.test(lower)) {
-    return "You can contact NISCO in Chennai, India at Catchnoor@live.in or on WhatsApp at +91 98945 77373. If you would like the team to review a specific requirement, I can help prepare an enquiry.";
+    return "You can contact NISCO in Chennai, India at nisco.in@outlook.com. If you would like the team to review a specific requirement, I can help prepare an enquiry.";
   }
   if (/\b(where are you|location|based in|which city)\b/.test(lower)) {
     return "NISCO is based in Chennai, India and can discuss suitable remote projects with businesses across India.";
