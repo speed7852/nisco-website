@@ -149,3 +149,73 @@ test("website maintenance enquiry uses its own guided flow", async () => {
   assert.match(r.body.reply, /Is your website already live/i);
   assert.equal(h.inserts.length, 0);
 });
+
+
+test("website enquiry sends a transactional email and records the lead", async () => {
+  const h = harness();
+  h.env.BREVO_API_KEY = "test-api-key";
+  h.env.BREVO_SENDER_EMAIL = "nisco.in@outlook.com";
+  const originalFetch = globalThis.fetch;
+  let sent;
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "https://api.brevo.com/v3/smtp/email");
+    assert.equal(options.headers["api-key"], "test-api-key");
+    sent = JSON.parse(options.body);
+    return new Response(JSON.stringify({ messageId: "test-message-id" }), { status: 201 });
+  };
+  try {
+    const request = new Request("https://worker.test/enquiry", {
+      method: "POST",
+      headers: { Origin: h.env.ALLOWED_ORIGIN, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Test Customer", email: "customer@example.com", business: "Java",
+        service: "AI chatbot", budget: "Below ₹15,000",
+        requirement: "Need an enquiry chatbot", consent: true, website: ""
+      })
+    });
+    const response = await worker.fetch(request, h.env);
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.success, true);
+    assert.equal(body.message_id, "test-message-id");
+    assert.equal(sent.to[0].email, "nisco.in@outlook.com");
+    assert.equal(sent.replyTo.email, "customer@example.com");
+    assert.match(sent.textContent, /Need an enquiry chatbot/);
+    assert.equal(h.inserts.length, 1);
+    assert.equal(h.inserts[0].values[3], "customer@example.com");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("website enquiry rejects missing consent and does not send email", async () => {
+  const h = harness();
+  h.env.BREVO_API_KEY = "test-api-key";
+  h.env.BREVO_SENDER_EMAIL = "nisco.in@outlook.com";
+  const request = new Request("https://worker.test/enquiry", {
+    method: "POST",
+    headers: { Origin: h.env.ALLOWED_ORIGIN, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: "Test Customer", email: "customer@example.com", service: "Website",
+      requirement: "Need a website", consent: false
+    })
+  });
+  const response = await worker.fetch(request, h.env);
+  assert.equal(response.status, 400);
+  assert.equal(h.inserts.length, 0);
+});
+
+test("website enquiry reports configuration missing rather than claiming success", async () => {
+  const h = harness();
+  const request = new Request("https://worker.test/enquiry", {
+    method: "POST",
+    headers: { Origin: h.env.ALLOWED_ORIGIN, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: "Test Customer", email: "customer@example.com", service: "Website",
+      requirement: "Need a website", consent: true
+    })
+  });
+  const response = await worker.fetch(request, h.env);
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).success, undefined);
+});
