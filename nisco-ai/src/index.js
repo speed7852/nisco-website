@@ -183,7 +183,7 @@ export default {
       const service = typeof enquiry.service === "string" ? enquiry.service.trim() : "";
       const budget = typeof enquiry.budget === "string" ? enquiry.budget.trim() : "";
       const requirement = typeof enquiry.requirement === "string" ? enquiry.requirement.trim() : "";
-      const emailPattern = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!name || name.length > 100 || !emailPattern.test(customerEmail) || customerEmail.length > 254 ||
           business.length > 120 || !service || service.length > 120 || budget.length > 80 ||
           !requirement || requirement.length > 1200 || enquiry.consent !== true) {
