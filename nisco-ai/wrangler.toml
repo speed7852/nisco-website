@@ -10,7 +10,7 @@ OPENAI_MODEL = "gpt-4.1-mini"
 [[d1_databases]]
 binding = "DB"
 database_name = "nisco-ai-leads"
-database_id = "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID"
+database_id = "aeea79a1-c8ea-46b9-a0ec-6ff546a9d218"
 migrations_dir = "migrations"
 
 [observability]
