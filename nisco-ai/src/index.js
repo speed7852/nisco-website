@@ -59,7 +59,7 @@ function json(data, status, origin) {
 }
 
 function validMessages(messages) {
-  if (!Array.isArray(messages) || messages.length < 1 || messages.length > 12) return false;
+  if (!Array.isArray(messages) || messages.length < 1 || messages.length > 24) return false;
   return messages.every(m =>
     m && ["user", "assistant"].includes(m.role) &&
     typeof m.content === "string" && m.content.length > 0 && m.content.length <= 2000
@@ -159,7 +159,7 @@ export default {
       const email = emailMatch ? emailMatch[0] : "";
       const phone = phoneMatch ? phoneMatch[0].trim() : "";
       const requirementMessages = userMessages
-        .filter(m => m !== starter)
+        .filter(m => m !== starter && !m.content.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/i) && !m.content.match(/(?:\\+?\\d[\\d\\s().-]{7,}\d)/))
         .map(m => m.content.trim())
         .filter(m => m && !/^(yes|yes please|i agree|i consent|okay|ok|sure|no|no thanks|thanks|thank you)$/i.test(m));
       const summary = requirementMessages.join(" | ").slice(0, 2000);
