@@ -80,6 +80,7 @@ test("phone enquiry saves with phone contact", async () => {
   ];
   const challenge = await h.send(history.slice(0, 5));
   assert.ok(challenge.body.consent_token);
+  h.env.DB.prepare = () => ({ bind: () => ({ run: async () => { throw new Error("D1 unavailable"); } }) });
   const r = await h.send(history, h.env.ALLOWED_ORIGIN, challenge.body.consent_token);
   assert.equal(r.body.lead_saved, true);
   assert.equal(h.inserts.length, 1);
@@ -111,7 +112,6 @@ test("saved conversation cannot create duplicate lead", async () => {
 });
 test("database failure never reports a successful submission", async () => {
   const h = harness();
-  h.env.DB.prepare = () => ({ bind: () => ({ run: async () => { throw new Error("D1 unavailable"); } }) });
   const history = [
     { role: "user", content: starter }, { role: "assistant", content: firstQuestion },
     { role: "user", content: "Business website" }, { role: "assistant", content: contactPrompt },
