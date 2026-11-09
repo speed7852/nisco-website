@@ -46,7 +46,7 @@ test("existing NISCO AI widget and Worker endpoint remain present", () => {
   assert.match(html, /id="nisco-chat-panel"/);
   assert.match(html, /assets\/nisco-chat\.js/);
   assert.match(chat, /nisco-ai\.speedhome7852\.workers\.dev\/chat/);
-  assert.match(chat, /startFreshConversation/);
+  assert.match(chat, /startFreshConversation/);\n  assert.match(chat, /I need an AI chatbot/);\n  assert.match(chat, /Website maintenance/);\n  assert.match(chat, /Grow my business/);
 });
 
 test("new sections have responsive styles", () => {
