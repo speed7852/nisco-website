@@ -189,7 +189,7 @@ export default {
       }, 200, allowed);
     }
 
-    const starter = userMessages.find(m => /please guide me through a (website|digital marketing|business transformation|business automation|ai chatbot|website maintenance|automation support) enquiry/i.test(m.content));
+    const starter = userMessages.find(m => /please guide me through (?:a|an) (website|digital marketing|business transformation|business automation|ai chatbot|website maintenance|automation support) enquiry/i.test(m.content));
     if (starter) {
       const flow = GUIDED_FLOWS.find(item => item.pattern.test(starter.content));
       if (!flow) return json({ reply: "Please tell me which NISCO service you would like to discuss: website, automation, AI chatbot, digital marketing or ongoing support." }, 200, allowed);
