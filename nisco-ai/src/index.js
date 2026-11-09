@@ -249,6 +249,25 @@ export default {
     if (JSON.stringify(body).length > 12000) return json({ error: "Request is too large." }, 413, allowed);
     if (!validMessages(body.messages)) return json({ error: "Please send a valid message (up to 2,000 characters)." }, 400, allowed);
 
+    if (body.consent_token) {
+      const lastMessage = body.messages.filter(m => m.role === "user").at(-1)?.content.trim().toLowerCase() || "";
+      const affirmative = /^(yes|yes please|yes[, ]+i agree|i agree|i consent|okay|ok|sure|that's fine|go ahead|you may share)[.! ]*$/i.test(lastMessage);
+      const negative = /^(no|no thanks|i do not consent|don't share)[.! ]*$/i.test(lastMessage);
+      if (!affirmative && !negative) return json({ reply: "Please reply Yes to agree to share your enquiry with NISCO, or No to decline." }, 200, allowed);
+      const challenge = await env.DB.prepare("SELECT * FROM lead_consent_challenges WHERE id = ?").bind(String(body.consent_token).slice(0, 64)).first();
+      if (!challenge || challenge.used_at || Date.parse(challenge.expires_at) <= Date.now()) return json({ reply: "This consent request has expired. Please start a new enquiry if you would like the NISCO team to contact you." }, 200, allowed);
+      if (negative) {
+        await env.DB.prepare("UPDATE lead_consent_challenges SET used_at = ? WHERE id = ? AND used_at IS NULL").bind(new Date().toISOString(), challenge.id).run();
+        return json({ reply: "No problem. I haven't saved or shared your details." }, 200, allowed);
+      }
+      const consumed = await env.DB.prepare("UPDATE lead_consent_challenges SET used_at = ? WHERE id = ? AND used_at IS NULL AND expires_at > ?").bind(new Date().toISOString(), challenge.id, new Date().toISOString()).run();
+      if (consumed.meta?.changes !== 1) return json({ reply: "This consent request has already been used or has expired. Please start a new enquiry." }, 200, allowed);
+      try {
+        await captureLead({ email: challenge.email, phone: challenge.phone, preferred_contact: challenge.email ? "email" : "phone", service: challenge.service, summary: challenge.summary, consent: true }, env);
+        return json({ reply: "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided.", lead_saved: true }, 200, allowed);
+      } catch (error) { console.error("NISCO lead capture failed", error); return json({ reply: "I couldn't save the enquiry just now. Your details haven't been submitted. Please try again shortly." }, 200, allowed); }
+    }
+
     const userMessages = body.messages.filter(m => m.role === "user");
     const assistantMessages = body.messages.filter(m => m.role === "assistant");
     const lastUserMessage = userMessages[userMessages.length - 1]?.content || "";
@@ -291,9 +310,13 @@ export default {
 
       if (!askedContact) return json({ reply: contactPrompt }, 200, allowed);
       if (!email && !phone) return json({ reply: "I couldn't identify an email address or phone number in that message. Please enter the contact email or phone number you'd like the NISCO team to use." }, 200, allowed);
-      if (!askedConsent) return json({ reply: consentPrompt }, 200, allowed);
-
-      const affirmative = /^(yes|yes please|yes[, ]+i agree|i agree|i consent|okay|ok|sure|that's fine|go ahead|you may share)[.! ]*$/i.test(lower);
+      if (!askedConsent) {
+        const token = crypto.randomUUID();
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+        await env.DB.prepare("INSERT INTO lead_consent_challenges (id, created_at, expires_at, email, phone, service, summary) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(token, new Date().toISOString(), expiresAt, email, phone, service, summary || service).run();
+        return json({ reply: consentPrompt, consent_token: token }, 200, allowed);
+      }
+      return json({ reply: consentPrompt + " Please use the consent prompt shown above to continue." }, 200, allowed);
       if (!affirmative) {
         if (/^(no|no thanks|i do not consent|don't share)$/i.test(lower)) {
           return json({ reply: "No problem. I haven't shared or saved your details. If you change your mind, let me know." }, 200, allowed);
