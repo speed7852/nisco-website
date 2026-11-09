@@ -11,7 +11,7 @@
   // Set this to the deployed NISCO AI Worker URL after deployment.
   const API_URL = "https://nisco-ai.speedhome7852.workers.dev/chat";
   const history = [];
-  const welcomeMessage = "Hello! I’m the NISCO AI assistant. I can help you explore our services, understand your requirements and prepare a business enquiry. What would you like to work on?";
+  const welcomeMessage = "Hello! I’m the NISCO AI assistant. I can help with NISCO websites, business automation and AI chatbots for Indian businesses. I can understand your requirements and prepare an enquiry. What would you like to work on?";
   let busy = false;
   let leadSaved = false;
 
