@@ -218,7 +218,7 @@ export default {
       if (!email && !phone) return json({ reply: "I couldn't identify an email address or phone number in that message. Please enter the contact email or phone number you'd like the NISCO team to use." }, 200, allowed);
       if (!askedConsent) return json({ reply: consentPrompt }, 200, allowed);
 
-      const affirmative = /^(yes|yes please|i agree|i consent|okay|ok|sure|that's fine|go ahead|you may share)$/i.test(lower);
+      const affirmative = /^(yes|yes please|yes[, ]+i agree|i agree|i consent|okay|ok|sure|that's fine|go ahead|you may share)[.! ]*$/i.test(lower);
       if (!affirmative) {
         if (/^(no|no thanks|i do not consent|don't share)$/i.test(lower)) {
           return json({ reply: "No problem. I haven't shared or saved your details. If you change your mind, let me know." }, 200, allowed);
