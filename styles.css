@@ -556,3 +556,33 @@ html{scroll-behavior:smooth;scroll-padding-top:92px}
  *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
  .js-motion-enabled .reveal{opacity:1;transform:none}
 }
+
+
+/* NISCO AI assistant */
+.nisco-chat{position:fixed;right:26px;bottom:24px;z-index:1000;font-family:Inter,Arial,sans-serif}
+.nisco-chat-launcher{display:flex;align-items:center;gap:10px;border:1px solid rgba(218,180,104,.65);border-radius:999px;padding:13px 19px;background:#0b2035;color:#fff;font:600 13px Inter,Arial,sans-serif;letter-spacing:.01em;box-shadow:0 12px 36px rgba(0,0,0,.25);cursor:pointer;transition:transform .25s,box-shadow .25s}
+.nisco-chat-launcher:hover{transform:translateY(-3px);box-shadow:0 16px 42px rgba(0,0,0,.3)}
+.nisco-chat-launch-icon{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#c9a45e;color:#07182a;font-size:17px}
+.nisco-chat-panel{position:absolute;right:0;bottom:66px;width:min(390px,calc(100vw - 32px));height:min(590px,calc(100dvh - 115px));min-height:390px;background:#fff;border:1px solid rgba(201,164,94,.35);border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.28);overflow:hidden;display:flex;flex-direction:column}
+.nisco-chat-panel[hidden]{display:none}
+.nisco-chat-header{display:flex;align-items:center;justify-content:space-between;padding:17px 19px;background:#091d32;color:#fff}
+.nisco-chat-header>div{display:flex;align-items:center;gap:11px}
+.nisco-chat-status{width:9px;height:9px;border-radius:50%;background:#6bc79a;box-shadow:0 0 0 4px rgba(107,199,154,.13)}
+.nisco-chat-header strong,.nisco-chat-header small{display:block}
+.nisco-chat-header strong{font:700 14px Montserrat,Arial,sans-serif;letter-spacing:.04em}
+.nisco-chat-header small{margin-top:3px;color:#c8d1dc;font-size:11px}
+.nisco-chat-close{border:0;background:transparent;color:#fff;font-size:25px;cursor:pointer;line-height:1}
+.nisco-chat-messages{flex:1;overflow:auto;padding:18px 15px;display:flex;flex-direction:column;gap:12px;background:#f7f8fa}
+.nisco-chat-message{max-width:88%;padding:12px 14px;border-radius:13px;font-size:13px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.nisco-chat-message.assistant{align-self:flex-start;background:#fff;color:#243345;border:1px solid #e8ebef;border-bottom-left-radius:4px}
+.nisco-chat-message.user{align-self:flex-end;background:#102a43;color:#fff;border-bottom-right-radius:4px}
+.nisco-chat-message.typing{color:#697586;font-style:italic}
+.nisco-chat-suggestions{display:flex;flex-wrap:wrap;gap:7px;padding:10px 13px 4px;background:#fff}
+.nisco-chat-suggestions button{border:1px solid #dfd2b6;border-radius:999px;padding:7px 10px;background:#fff;color:#66512c;font-size:11px;cursor:pointer}
+.nisco-chat-form{display:flex;gap:9px;align-items:flex-end;padding:11px 13px 9px;background:#fff}
+.nisco-chat-form textarea{flex:1;resize:none;max-height:90px;border:1px solid #dce1e7;border-radius:11px;padding:11px 12px;font:13px Inter,Arial,sans-serif;outline:none}
+.nisco-chat-form textarea:focus{border-color:#b99555;box-shadow:0 0 0 3px rgba(185,149,85,.12)}
+.nisco-chat-form button{width:39px;height:39px;border:0;border-radius:11px;background:#c9a45e;color:#07182a;font-size:22px;font-weight:700;cursor:pointer}
+.nisco-chat-disclaimer{margin:0;padding:0 13px 12px;background:#fff;color:#7a8490;font-size:10px;text-align:center}
+@media(max-width:600px){.nisco-chat{right:14px;bottom:14px}.nisco-chat-panel{right:-2px;bottom:62px;width:calc(100vw - 24px);height:min(72dvh,590px)}.nisco-chat-launcher{padding:11px 15px}}
+@media(prefers-reduced-motion:reduce){.nisco-chat-launcher{transition:none}}
