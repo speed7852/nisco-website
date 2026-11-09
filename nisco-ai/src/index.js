@@ -149,7 +149,8 @@ export default {
       if (typeof args === "string") {
         try { args = JSON.parse(args); } catch { args = {}; }
       }
-      if (!(priorAssistantAskedConsent && lastUserSaysYes && args.consent === true)) {\n        return json({ reply: "I can help with that. First, please tell me a little more about what you need so I can prepare the right enquiry." }, 200, allowed);\n      }\n      const result = await captureLead(args, env);
+      if (!(priorAssistantAskedConsent && lastUserSaysYes && args.consent === true)) {
+        return json({ reply: "I can help with that. First, please tell me a little more about what you need so I can prepare the right enquiry." }, 200, allowed);\n      }\n      const result = await captureLead(args, env);
       if (result.ok) {
         return json({ reply: "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided." }, 200, allowed);
       }
