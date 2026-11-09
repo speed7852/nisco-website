@@ -14,7 +14,8 @@ test("India contact details and Chennai positioning are configured", () => {
   assert.match(config, /Catchnoor@live\.in/);
   assert.match(config, /919894577373/);
   assert.match(config, /Chennai/);
-  assert.match(html, /Chennai, India/);\n  assert.match(html, /Smarter Digital\\.<br>Stronger/);
+  assert.match(html, /Chennai, India/);
+  assert.match(html, /Smarter Digital\.<br>Stronger/);
 });
 
 test("service packages show agreed INR starting prices", () => {
