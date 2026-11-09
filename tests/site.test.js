@@ -2,12 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const [html, css, script, chat, config] = await Promise.all([
+const [html, css, script, chat, config, headers] = await Promise.all([
   readFile(new URL("../index.html", import.meta.url), "utf8"),
   readFile(new URL("../styles.css", import.meta.url), "utf8"),
   readFile(new URL("../script.js", import.meta.url), "utf8"),
   readFile(new URL("../assets/nisco-chat.js", import.meta.url), "utf8"),
-  readFile(new URL("../assets/nisco-india-config.js", import.meta.url), "utf8")
+  readFile(new URL("../assets/nisco-india-config.js", import.meta.url), "utf8"),
+  readFile(new URL("../_headers", import.meta.url), "utf8")
 ]);
 
 test("India contact details and Chennai positioning are configured", () => {
@@ -62,4 +63,14 @@ test("new sections have responsive styles", () => {
   assert.match(css, /\.package-grid/);
   assert.match(css, /\.enquiry-form/);
   assert.match(css, /@media\(max-width:680px\)/);
+});
+
+
+test("security headers and enquiry copy are configured", () => {
+  assert.match(headers, /X-Content-Type-Options: nosniff/);
+  assert.match(headers, /X-Frame-Options: DENY/);
+  assert.match(headers, /Content-Security-Policy-Report-Only:/);
+  assert.match(headers, /Permissions-Policy:/);
+  assert.match(html, /sent directly to the NISCO team/i);
+  assert.doesNotMatch(html, /email app will prepare/i);
 });
