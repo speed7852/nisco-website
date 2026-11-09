@@ -123,9 +123,11 @@ export default {
     }
 
     const priorAssistantAskedConsent = body.messages.some(m =>
-      m.role === "assistant" && /may i share .*details.*nisco team|permission.*share.*nisco team/i.test(m.content)
+      m.role === "assistant" &&
+      /consent|permission|agree/i.test(m.content) &&
+      /nisco team|share your details|contact you/i.test(m.content)
     );
-    const lastUserSaysYes = /^(yes|yes please|i agree|i consent|okay|ok|sure)$/i.test(lastUserMessage.trim());
+    const lastUserSaysYes = /^(yes|yes please|i agree|i consent|okay|ok|sure|that's fine|go ahead)$/i.test(lastUserMessage.trim());
     const messages = [{ role: "system", content: SYSTEM_PROMPT }, ...body.messages];
     try {
       const data = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
@@ -149,9 +151,12 @@ export default {
       if (typeof args === "string") {
         try { args = JSON.parse(args); } catch { args = {}; }
       }
-      if (!(priorAssistantAskedConsent && lastUserSaysYes && args.consent === true)) {
-        return json({ reply: "I can help with that. First, please tell me a little more about what you need so I can prepare the right enquiry." }, 200, allowed);
+      if (!(priorAssistantAskedConsent && lastUserSaysYes)) {
+        return json({ reply: "Before I save this enquiry, may I share the details you've provided with the NISCO team so they can contact you?" }, 200, allowed);
       }
+      // The visitor's affirmative reply to the preceding consent question is the source of consent.
+      // Do not depend on the model remembering to set its tool argument correctly.
+      args.consent = true;
       const result = await captureLead(args, env);
       if (result.ok) {
         return json({ reply: "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided." }, 200, allowed);
