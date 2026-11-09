@@ -26,12 +26,12 @@
     messagesEl.scrollTop = messagesEl.scrollHeight;
     return node;
   }
-  async function send(text) {
+  async function send(text, displayText = text) {
     const message = text.trim();
     if (!message || busy) return;
     busy = true;
     suggestions.hidden = true;
-    addMessage(message, "user");
+    addMessage(displayText, "user");
     history.push({ role: "user", content: message });
     input.value = "";
     const typing = addMessage("NISCO AI is thinking…", "assistant", "typing");
@@ -75,8 +75,15 @@
       form.requestSubmit();
     }
   });
+  const starterPrompts = {
+    "I need a website": "I need a website. Please guide me through a website enquiry and ask one question at a time. Start by asking what type of website I need.",
+    "Grow my business": "I want to grow my business. Please guide me through a digital marketing enquiry and ask one question at a time. Start by asking what my business does and what growth goal I want to achieve.",
+    "Automate a process": "I want to automate a business process. Please guide me through a business transformation enquiry and ask one question at a time. Start by asking which process I want to improve or automate."
+  };
   suggestions.addEventListener("click", event => {
     const button = event.target.closest("button");
-    if (button) send(button.textContent);
+    if (!button) return;
+    const label = button.textContent.trim();
+    send(starterPrompts[label] || label, label);
   });
 })();
