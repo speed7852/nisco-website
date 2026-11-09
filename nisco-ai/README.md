@@ -1,50 +1,66 @@
-# NISCO AI — Agent Worker
+# NISCO AI — Website Business Assistant
 
-This is the private backend for the NISCO website chat assistant. The static website is deployed through Cloudflare Pages; this Worker is deployed separately.
+NISCO AI is the website assistant for NISCO's India service launch. The static website is deployed through Cloudflare Pages; the assistant backend is deployed separately as a Cloudflare Worker.
 
-## Agent capabilities
-- Understands visitor needs across NISCO's four service areas.
-- Asks focused qualification questions and prepares enquiry briefs.
-- Uses a controlled `capture_lead` tool to save an enquiry to Cloudflare D1.
-- Saves a lead only after the visitor explicitly requests contact/submission and consents.
-- Does not quote unapproved prices, promise delivery dates, or take external actions.
+## Current capabilities
+- Explains NISCO's India services: business websites, automation, AI chatbots, digital marketing and ongoing support.
+- Gives approved INR starting prices only:
+  - Business website: ₹15,000 onwards
+  - Business automation: ₹15,000 onwards
+  - AI chatbot: ₹10,000 onwards
+  - Website maintenance: ₹2,000/month onwards
+  - Automation support: ₹3,000/month onwards
+- Answers common location and contact questions (Chennai; Catchnoor@live.in; WhatsApp +91 98945 77373).
+- Provides guided qualification for website, automation, AI chatbot, digital marketing, website maintenance and automation support enquiries.
+- Stores an enquiry in Cloudflare D1 only after a contact method is supplied and the visitor explicitly consents.
+- Does not send WhatsApp or email notifications, make promises, or submit a quotation.
+
+Prices are indicative starting prices, not fixed quotations. Scope, integrations, licences, hosting, taxes and third-party costs must be confirmed in writing.
 
 ## Architecture
-Browser chat widget → Cloudflare Worker → OpenAI Chat Completions tool-calling loop → Cloudflare D1 lead table.
+Website chat widget (assets/nisco-chat.js) → Cloudflare Worker (src/index.js) → Cloudflare Workers AI → Cloudflare D1 (leads).
 
-The OpenAI API key is a Worker secret and is never exposed to browser JavaScript. The website widget contains only the public Worker URL.
+The deployed Worker uses the Cloudflare Workers AI binding and the model @cf/meta/llama-3.3-70b-instruct-fp8-fast. It does not require an OpenAI API key. The D1 binding is configured in wrangler.toml.
 
-## One-time Cloudflare setup
-1. In Cloudflare, create a D1 database named `nisco-ai-leads`.
-2. Copy its database ID into `wrangler.toml`, replacing `REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID`.
-3. From this `nisco-ai` folder, run `npx wrangler d1 migrations apply nisco-ai-leads --remote`.
-4. Authenticate Wrangler with `npx wrangler login` if not already authenticated.
-5. Add the OpenAI key as a secret: `npx wrangler secret put OPENAI_API_KEY`.
-6. Deploy: `npx wrangler deploy`.
-7. Copy the resulting `https://nisco-ai.<your-subdomain>.workers.dev` URL and update `API_URL` in `../assets/nisco-chat.js` to end in `/chat`.
-8. Commit the widget URL change. Cloudflare Pages should then publish the updated site from GitHub.
-9. If using a custom domain, update `ALLOWED_ORIGIN` in `wrangler.toml` to that exact origin and redeploy.
+## Deployment
+The GitHub Actions workflow .github/workflows/deploy-nisco-ai.yml runs the Node regression tests first. If they pass, it applies pending D1 migrations and deploys the Worker.
 
-## Local development
-Create `.dev.vars` in this folder (never commit it):
-```dotenv
-OPENAI_API_KEY=your-key-here
-ALLOWED_ORIGIN=http://localhost:8788
+Required GitHub Actions secrets:
+- CLOUDFLARE_API_TOKEN
+- CLOUDFLARE_ACCOUNT_ID
+
+Never commit secrets or put them in browser JavaScript.
+
+## Configuration
+- Worker name: nisco-ai
+- Endpoint: https://nisco-ai.speedhome7852.workers.dev/chat
+- Allowed website origin: https://nisco-website.pages.dev
+- D1 database: nisco-ai-leads
+- D1 schema: migrations/0001_create_leads.sql
+
+If the website is moved to a different domain, update ALLOWED_ORIGIN in wrangler.toml and redeploy the Worker. The frontend's public API_URL must match the deployed Worker endpoint.
+
+## Local development and tests
+From this directory:
+```bash
+npm test
+npx wrangler dev
 ```
-For local D1, use Wrangler's local database workflow and apply the migration locally. Then run `npx wrangler dev`.
 
-## Lead handling and privacy
-Leads are stored in D1. Access the database only through authorised Cloudflare account users. Before launch, publish a privacy notice explaining what details are collected, why they are collected, retention and contact rights. Add a retention/deletion process and restrict access to the database. No automatic email or WhatsApp notification is configured in this first release.
+The tests use mocked Workers AI and D1 bindings; they do not contact production services or write real leads.
 
-## Verification checklist
-- [ ] D1 database created and migration applied remotely.
-- [ ] `OPENAI_API_KEY` added as a Worker secret.
-- [ ] Worker deployed and `/chat` endpoint responds.
-- [ ] Website `API_URL` points to the deployed Worker.
-- [ ] Test all four service areas on desktop and mobile.
-- [ ] Test that a lead is not saved without explicit consent.
-- [ ] Test that a consented enquiry appears in D1.
-- [ ] Add/confirm privacy notice before collecting real visitor data.
+## Lead privacy and handling
+- A lead is stored only after a visitor provides an email or phone number and explicitly agrees to share the enquiry with NISCO.
+- Declining consent must not create a database record.
+- The visitor is told when an enquiry is successfully saved; failed writes must never be described as successful.
+- No automated email or WhatsApp notification is configured.
+- Before collecting real visitor data, publish a privacy notice covering purpose, access, retention/deletion and contact rights. Restrict D1 access to authorised operators.
 
-## Handover
-The Worker entry point is `src/index.js`; the lead schema is in `migrations/0001_create_leads.sql`. Tool definitions, guardrails and business knowledge are near the top of the Worker file. Keep secrets out of GitHub and never place the OpenAI key in the website files.
+## Release verification
+After a successful GitHub Actions deployment:
+1. Confirm the Worker deployment job completed successfully.
+2. Open the live website and test the chatbot on mobile and desktop.
+3. Test price answers for website, automation, AI chatbot and monthly support.
+4. Test each guided enquiry path.
+5. Verify a lead is not stored before consent and is stored after consent.
+6. Confirm the chatbot does not claim that an email or WhatsApp notification was sent.
