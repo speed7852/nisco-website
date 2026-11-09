@@ -198,7 +198,7 @@ export default {
       const firstQuestion = flow.firstQuestion;
       const askedFirst = assistantMessages.some(m => m.content === firstQuestion);
       const contactPrompt = "To prepare your enquiry, please share the email address or phone number the NISCO team should use to contact you.";
-      const consentPrompt = "Before I save this enquiry, may I share the details you've provided with the NISCO team so they can contact you?";
+      const consentPrompt = "Before I save this enquiry: your contact details and requirement summary will be stored in NISCO's enquiry database for the team to review and follow up. No automatic WhatsApp or email will be sent. Do you agree to share and save these details?";
       const askedContact = assistantMessages.some(m => m.content === contactPrompt);
       const askedConsent = assistantMessages.some(m => m.content === consentPrompt);
 
