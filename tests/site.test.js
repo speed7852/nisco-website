@@ -11,8 +11,8 @@ const [html, css, script, chat, config] = await Promise.all([
 ]);
 
 test("India contact details and Chennai positioning are configured", () => {
-  assert.match(config, /Catchnoor@live\.in/);
-  assert.match(config, /919894577373/);
+  assert.match(config, /nisco\.in@outlook\.com/);
+  assert.doesNotMatch(config, /whatsapp|919894577373/i);
   assert.match(config, /Chennai/);
   assert.match(html, /Chennai, India/);
   assert.match(html, /Smarter Digital\.<br>Stronger/);
@@ -28,12 +28,15 @@ test("service packages show agreed INR starting prices", () => {
   assert.match(html, /₹3,000\/month/);
 });
 
-test("enquiry form requires consent and prepares a WhatsApp draft", () => {
+test("enquiry form requires consent and prepares an email draft", () => {
   assert.match(html, /id="nisco-enquiry-form"/);
   assert.match(html, /id="enquiry-consent" required/);
-  assert.match(script, /https:\/\/wa\.me\//);
-  assert.match(script, /press Send in WhatsApp/);
+  assert.match(script, /mailto:/);
+  assert.match(script, /press Send to contact NISCO/);
+  assert.doesNotMatch(script, /wa\.me|whatsapp/i);
   assert.match(html, /not submitted automatically/i);
+  assert.match(html, /nisco\.in@outlook\.com/);
+  assert.doesNotMatch(html, /Catchnoor@live\.in|98945\s?77373|wa\.me/i);
 });
 
 test("portfolio claims are clearly identified as project and in-house demo", () => {
