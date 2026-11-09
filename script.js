@@ -82,3 +82,37 @@ if (year) year.textContent = new Date().getFullYear();
 
   elements.forEach(element => observer.observe(element));
 })();
+
+/* Prepare an enquiry for the visitor to review and send through WhatsApp. */
+(() => {
+  const form = document.getElementById("nisco-enquiry-form");
+  if (!form) return;
+  const note = document.getElementById("enquiry-form-note");
+  const config = window.NISCO_CONFIG || {};
+  form.querySelectorAll("[data-service]").forEach(link => link.addEventListener("click", () => {
+    const select = document.getElementById("enquiry-service");
+    if (select) select.value = link.dataset.service;
+  }));
+  form.addEventListener("submit", event => {
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+    const phone = String(config.whatsapp || "").replace(/\D/g, "");
+    if (!phone) {
+      if (note) note.textContent = "WhatsApp contact is not configured yet. Please email NISCO instead.";
+      return;
+    }
+    const values = new FormData(form);
+    const message = [
+      "Hello NISCO, I would like to discuss a business requirement.",
+      "Name: " + values.get("name"),
+      "Business: " + (values.get("business") || "Not provided"),
+      "Service: " + values.get("service"),
+      "Budget: " + values.get("budget"),
+      "Requirement: " + values.get("requirement"),
+      "Location: Chennai, India"
+    ].join("\n");
+    const url = "https://wa.me/" + phone + "?text=" + encodeURIComponent(message);
+    window.open(url, "_blank", "noopener,noreferrer");
+    if (note) note.textContent = "WhatsApp has opened with your draft enquiry. Review the details and press Send in WhatsApp to contact NISCO.";
+  });
+})();
