@@ -89,7 +89,7 @@ if (year) year.textContent = new Date().getFullYear();
   if (!form) return;
   const note = document.getElementById("enquiry-form-note");
   const config = window.NISCO_CONFIG || {};
-  form.querySelectorAll("[data-service]").forEach(link => link.addEventListener("click", () => {
+  document.querySelectorAll(".package-cta[data-service]").forEach(link => link.addEventListener("click", () => {
     const select = document.getElementById("enquiry-service");
     if (select) select.value = link.dataset.service;
   }));
