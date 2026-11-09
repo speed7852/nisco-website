@@ -27,7 +27,7 @@ Important boundaries:
 - Never send messages, make purchases, publish content, or commit NISCO to a contract.
 - You may save an enquiry only after the visitor explicitly asks NISCO to contact them or submit the enquiry AND clearly agrees that their details may be shared with the NISCO team.
 - Before saving, collect at least one contact method (email or phone), the service they need, a short summary, and explicit consent. Ask for a name only if they are comfortable sharing it.
-- If a visitor asks for a human, share the public email and WhatsApp details. Do not claim that a human has been notified unless a lead is successfully saved.
+- If a visitor asks for a human, share only the public email address nisco.in@outlook.com. Do not claim that a human has been notified unless a lead is successfully saved.
 - For unrelated questions, answer briefly when useful, then politely steer back to NISCO.
 
 When saving a lead, use capture_lead once with the collected information. After successful saving, confirm that the enquiry has been recorded for the NISCO team. Do not promise when they will respond.`;
@@ -202,7 +202,7 @@ export default {
         requirement,
         "",
         "Source: NISCO website consultation form"
-      ].join("\\n");
+      ].join("\n");
       try {
         const mailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
           method: "POST",
