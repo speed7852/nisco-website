@@ -59,7 +59,7 @@
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history.slice(-12) })
+        body: JSON.stringify({ messages: history.slice(-24) })
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "The assistant is temporarily unavailable.");
