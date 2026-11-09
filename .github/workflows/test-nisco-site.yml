@@ -8,6 +8,7 @@ on:
       - "script.js"
       - "assets/**"
       - "tests/site.test.js"
+      - "nisco-ai/**"
       - ".github/workflows/test-nisco-site.yml"
   pull_request:
     paths:
@@ -31,4 +32,5 @@ jobs:
           node --check script.js
           node --check assets/nisco-chat.js
           node --check assets/nisco-india-config.js
-          node --test tests/site.test.js
+          node --check nisco-ai/src/index.js
+          node --test tests/site.test.js nisco-ai/src/index.test.js
