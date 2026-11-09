@@ -11,7 +11,15 @@
   // Set this to the deployed NISCO AI Worker URL after deployment.
   const API_URL = "https://nisco-ai.speedhome7852.workers.dev/chat";
   const history = [];
+  const welcomeMessage = "Hello! I’m the NISCO AI assistant. I can help you explore our services, understand your requirements and prepare a business enquiry. What would you like to work on?";
   let busy = false;
+
+  function startFreshConversation() {
+    history.length = 0;
+    messagesEl.replaceChildren();
+    addMessage(welcomeMessage, "assistant");
+    suggestions.hidden = false;
+  }
 
   function toggle(open) {
     panel.hidden = !open;
@@ -84,6 +92,8 @@
     const button = event.target.closest("button");
     if (!button) return;
     const label = button.textContent.trim();
+    if (busy) return;
+    startFreshConversation();
     send(starterPrompts[label] || label, label);
   });
 })();
