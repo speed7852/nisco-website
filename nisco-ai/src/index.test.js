@@ -15,7 +15,7 @@ function harness() {
       body: JSON.stringify({ messages })
     });
     const response = await worker.fetch(request, env);
-    return { status: response.status, body: await response.json() };
+    const raw = await response.text();\n    let body; try { body = JSON.parse(raw); } catch { body = { error: raw }; }\n    return { status: response.status, body };
   }
   return { send, inserts, env };
 }
