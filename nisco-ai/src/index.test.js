@@ -62,8 +62,9 @@ test("email enquiry progresses once and saves only after consent", async () => {
   r = await h.send(history); assert.equal(r.body.reply, contactPrompt);
   history.push({ role: "assistant", content: contactPrompt }, { role: "user", content: "Test@gmail.com" });
   r = await h.send(history); assert.equal(r.body.reply, consentPrompt);
+  const token = r.body.consent_token; assert.ok(token);
   history.push({ role: "assistant", content: consentPrompt }, { role: "user", content: "Yes" });
-  r = await h.send(history);
+  r = await h.send(history, h.env.ALLOWED_ORIGIN, token);
   assert.equal(r.body.lead_saved, true);
   assert.equal(h.inserts.length, 1);
   assert.equal(h.inserts[0].values[3], "Test@gmail.com");
@@ -151,6 +152,9 @@ test("AI chatbot enquiry is guided and saved only after explicit consent", async
   assert.equal(r.body.reply, consentPrompt);
   history.push({ role: "assistant", content: consentPrompt }, { role: "user", content: "Yes, I agree" });
   r = await h.send(history);
+  const token = r.body.consent_token; assert.ok(token);
+  history.push({ role: "assistant", content: consentPrompt }, { role: "user", content: "Yes, I agree" });
+  r = await h.send(history, h.env.ALLOWED_ORIGIN, token);
   assert.equal(r.body.lead_saved, true);
   assert.equal(h.inserts.length, 1);
   assert.equal(h.inserts[0].values[6], "AI chatbot");
