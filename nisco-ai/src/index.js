@@ -110,6 +110,22 @@ export default {
     try { body = await request.json(); } catch { return json({ error: "Invalid request." }, 400, allowed); }
     if (!validMessages(body.messages)) return json({ error: "Please send a valid message (up to 2,000 characters)." }, 400, allowed);
 
+    const lastUserMessage = body.messages.filter(m => m.role === "user").slice(-1)[0]?.content || "";
+    const starter = lastUserMessage.toLowerCase();
+    if (starter.includes("i need a website") && starter.includes("start by asking what type")) {
+      return json({ reply: "Absolutely. What type of website do you need—for example, a business website, online store, portfolio, or something else?" }, 200, allowed);
+    }
+    if (starter.includes("grow my business") && starter.includes("start by asking")) {
+      return json({ reply: "Great. What does your business do, and what would you most like to improve—brand awareness, customer enquiries, sales, or online visibility?" }, 200, allowed);
+    }
+    if (starter.includes("automate a business process") && starter.includes("start by asking")) {
+      return json({ reply: "Which business process would you like to automate? For example, customer enquiries, reporting, approvals, bookings, or repetitive admin tasks?" }, 200, allowed);
+    }
+
+    const priorAssistantAskedConsent = body.messages.some(m =>
+      m.role === "assistant" && /may i share .*details.*nisco team|permission.*share.*nisco team/i.test(m.content)
+    );
+    const lastUserSaysYes = /^(yes|yes please|i agree|i consent|okay|ok|sure)$/i.test(lastUserMessage.trim());
     const messages = [{ role: "system", content: SYSTEM_PROMPT }, ...body.messages];
     try {
       const data = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
@@ -133,7 +149,7 @@ export default {
       if (typeof args === "string") {
         try { args = JSON.parse(args); } catch { args = {}; }
       }
-      const result = await captureLead(args, env);
+      if (!(priorAssistantAskedConsent && lastUserSaysYes && args.consent === true)) {\n        return json({ reply: "I can help with that. First, please tell me a little more about what you need so I can prepare the right enquiry." }, 200, allowed);\n      }\n      const result = await captureLead(args, env);
       if (result.ok) {
         return json({ reply: "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided." }, 200, allowed);
       }
