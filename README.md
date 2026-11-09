@@ -56,3 +56,13 @@ nisco-website/
 - The contact link is a placeholder until an official email address is supplied.
 - The hero uses a cropped photograph from the approved NISCO sample homepage; the logo is a vector recreation of the sample wordmark.
 - No analytics, tracking, backend, database or form submission service is configured yet.
+
+
+## NISCO AI agent
+The website includes a premium chat widget in `assets/nisco-chat.js`. Its agent backend is maintained separately in `nisco-ai/` and uses OpenAI's `gpt-4.1-mini` model with controlled lead-capture tool calling.
+
+- Backend setup, Cloudflare D1 migration, secrets and deployment: see [nisco-ai/README.md](nisco-ai/README.md).
+- The Worker is a separate Cloudflare deployment from the static Pages site.
+- Before the chat can answer live requests, configure the D1 database, add the `OPENAI_API_KEY` Worker secret, deploy the Worker, and replace the placeholder Worker URL in `assets/nisco-chat.js`.
+- Lead capture requires explicit visitor consent. No email or WhatsApp notification integration is configured yet.
+- Do not commit API keys or other secrets.
