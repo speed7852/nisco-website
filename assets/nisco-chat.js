@@ -6,12 +6,11 @@
   const input = document.getElementById("nisco-chat-input");
   const messagesEl = document.getElementById("nisco-chat-messages");
   const suggestions = document.getElementById("nisco-chat-suggestions");
-  if (!panel || !launcher || !form) return;
+  if (!panel || !launcher || !form || !input || !messagesEl || !suggestions || !close) return;
 
-  // Set this to the deployed NISCO AI Worker URL after deployment.
   const API_URL = "https://nisco-ai.speedhome7852.workers.dev/chat";
   const history = [];
-  const welcomeMessage = "Hello! I’m the NISCO AI assistant. I can help with NISCO websites, business automation and AI chatbots for Indian businesses. I can understand your requirements and prepare an enquiry. What would you like to work on?";
+  const welcomeMessage = "Hello! I’m NISCO AI, your business guide. I can help with websites, automation, AI chatbots, digital marketing and ongoing support. I can also explain our India starting prices. What would you like to explore?";
   let busy = false;
   let leadSaved = false;
 
@@ -40,7 +39,7 @@
     const message = text.trim();
     if (!message || busy) return;
     if (leadSaved) {
-      addMessage("You're very welcome. Your enquiry is already recorded with the NISCO team. Use a suggestion below to start a new enquiry.", "assistant");
+      addMessage("Your enquiry is already recorded with the NISCO team. Choose a service below to start a new enquiry.", "assistant");
       input.value = "";
       return;
     }
@@ -53,9 +52,6 @@
     const submit = form.querySelector("button");
     submit.disabled = true;
     try {
-      if (API_URL.includes("YOUR-SUBDOMAIN")) {
-        throw new Error("NISCO AI is being configured. Please check back shortly.");
-      }
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -79,6 +75,7 @@
       input.focus();
     }
   }
+
   launcher.addEventListener("click", () => toggle(panel.hidden));
   close.addEventListener("click", () => toggle(false));
   form.addEventListener("submit", event => {
@@ -91,16 +88,18 @@
       form.requestSubmit();
     }
   });
+
   const starterPrompts = {
     "I need a website": "I need a website. Please guide me through a website enquiry and ask one question at a time. Start by asking what type of website I need.",
-    "Grow my business": "I want to grow my business. Please guide me through a digital marketing enquiry and ask one question at a time. Start by asking what my business does and what growth goal I want to achieve.",
-    "Automate a process": "I want to automate a business process. Please guide me through a business transformation enquiry and ask one question at a time. Start by asking which process I want to improve or automate."
+    "I need an AI chatbot": "I need an AI chatbot. Please guide me through an AI chatbot enquiry and ask one question at a time. Start by asking what I want the chatbot to do.",
+    "Automate a process": "I want business automation. Please guide me through a business automation enquiry and ask one question at a time. Start by asking which process I want to improve.",
+    "Grow my business": "I want to grow my business. Please guide me through a digital marketing enquiry and ask one question at a time. Start by asking about my business and growth goal.",
+    "Website maintenance": "I need website maintenance. Please guide me through a website maintenance enquiry and ask one question at a time. Start by asking about my current website."
   };
   suggestions.addEventListener("click", event => {
     const button = event.target.closest("button");
-    if (!button) return;
+    if (!button || busy) return;
     const label = button.textContent.trim();
-    if (busy) return;
     startFreshConversation();
     send(starterPrompts[label] || label, label);
   });
