@@ -17,6 +17,7 @@ on:
       - "script.js"
       - "assets/**"
       - "tests/site.test.js"
+      - "nisco-ai/**"
       - ".github/workflows/test-nisco-site.yml"
   workflow_dispatch:
 jobs:
