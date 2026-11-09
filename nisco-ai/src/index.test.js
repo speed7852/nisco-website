@@ -24,7 +24,7 @@ function harness() {
 const starter = "I need a website. Please guide me through a website enquiry and ask one question at a time. Start by asking what type of website I need.";
 const firstQuestion = "Absolutely. What type of website do you need—for example, a business website, online store, portfolio, or something else?";
 const contactPrompt = "To prepare your enquiry, please share the email address or phone number the NISCO team should use to contact you.";
-const consentPrompt = "Before I save this enquiry, may I share the details you've provided with the NISCO team so they can contact you?";
+const consentPrompt = "Before I save this enquiry: your contact details and requirement summary will be stored in NISCO's enquiry database for the team to review and follow up. No automatic WhatsApp or email will be sent. Do you agree to share and save these details?";
 
 test("validates origin, method, path and payload", async () => {
   const h = harness();
