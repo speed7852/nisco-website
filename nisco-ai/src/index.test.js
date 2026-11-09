@@ -102,3 +102,50 @@ test("database failure never reports a successful submission", async () => {
   assert.equal(r.body.lead_saved, undefined);
   assert.match(r.body.reply, /couldn't save/i);
 });
+
+
+test("answers with approved India starting prices without saving a lead", async () => {
+  const h = harness();
+  const r = await h.send([{ role: "user", content: "How much does an AI chatbot cost?" }]);
+  assert.match(r.body.reply, /starts from ₹10,000/i);
+  assert.equal(h.inserts.length, 0);
+});
+
+test("shows the complete approved price list when asked generally", async () => {
+  const h = harness();
+  const r = await h.send([{ role: "user", content: "Can you share your pricing?" }]);
+  assert.match(r.body.reply, /business website ₹15,000/i);
+  assert.match(r.body.reply, /AI chatbot ₹10,000/i);
+  assert.match(r.body.reply, /website maintenance ₹2,000\/month/i);
+  assert.match(r.body.reply, /automation support ₹3,000\/month/i);
+  assert.equal(h.inserts.length, 0);
+});
+
+test("AI chatbot enquiry is guided and saved only after explicit consent", async () => {
+  const h = harness();
+  const starter = "I need an AI chatbot. Please guide me through an AI chatbot enquiry and ask one question at a time. Start by asking what I want the chatbot to do.";
+  const firstQuestion = "What should your chatbot help visitors do—for example, answer FAQs, qualify enquiries, collect leads, or support bookings?";
+  const history = [{ role: "user", content: starter }];
+  let r = await h.send(history);
+  assert.equal(r.body.reply, firstQuestion);
+  history.push({ role: "assistant", content: firstQuestion }, { role: "user", content: "Answer FAQs and collect website enquiries." });
+  r = await h.send(history);
+  assert.equal(r.body.reply, contactPrompt);
+  history.push({ role: "assistant", content: contactPrompt }, { role: "user", content: "owner@example.com" });
+  r = await h.send(history);
+  assert.equal(r.body.reply, consentPrompt);
+  history.push({ role: "assistant", content: consentPrompt }, { role: "user", content: "Yes, I agree" });
+  r = await h.send(history);
+  assert.equal(r.body.lead_saved, true);
+  assert.equal(h.inserts.length, 1);
+  assert.equal(h.inserts[0].values[6], "AI chatbot");
+  assert.match(h.inserts[0].values[7], /Answer FAQs and collect website enquiries/i);
+});
+
+test("website maintenance enquiry uses its own guided flow", async () => {
+  const h = harness();
+  const starter = "I need website maintenance. Please guide me through a website maintenance enquiry and ask one question at a time. Start by asking about my current website.";
+  const r = await h.send([{ role: "user", content: starter }]);
+  assert.match(r.body.reply, /Is your website already live/i);
+  assert.equal(h.inserts.length, 0);
+});
