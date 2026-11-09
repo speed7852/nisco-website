@@ -112,6 +112,19 @@ export default {
 
     const lastUserMessage = body.messages.filter(m => m.role === "user").slice(-1)[0]?.content || "";
     const starter = lastUserMessage.toLowerCase();
+
+    // A saved enquiry closes this conversation's lead-capture flow.
+    // Never ask for consent again or attempt to save the same enquiry twice.
+    const enquiryAlreadySaved = body.messages.some(m =>
+      m.role === "assistant" &&
+      /your enquiry has been recorded successfully for the nisco team/i.test(m.content)
+    );
+    if (enquiryAlreadySaved) {
+      return json({
+        reply: "You're very welcome. Your enquiry is already recorded with the NISCO team. If you have a different requirement, please start a new conversation.",
+        lead_saved: true
+      }, 200, allowed);
+    }
     if (starter.includes("i need a website") && starter.includes("start by asking what type")) {
       return json({ reply: "Absolutely. What type of website do you need—for example, a business website, online store, portfolio, or something else?" }, 200, allowed);
     }
@@ -159,7 +172,10 @@ export default {
       args.consent = true;
       const result = await captureLead(args, env);
       if (result.ok) {
-        return json({ reply: "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided." }, 200, allowed);
+        return json({
+          reply: "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided.",
+          lead_saved: true
+        }, 200, allowed);
       }
       let reply;
       if (result.message === "Consent is required before saving.") {
