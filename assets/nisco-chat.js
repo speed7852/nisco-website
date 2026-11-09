@@ -13,9 +13,11 @@
   const history = [];
   const welcomeMessage = "Hello! I’m the NISCO AI assistant. I can help you explore our services, understand your requirements and prepare a business enquiry. What would you like to work on?";
   let busy = false;
+  let leadSaved = false;
 
   function startFreshConversation() {
     history.length = 0;
+    leadSaved = false;
     messagesEl.replaceChildren();
     addMessage(welcomeMessage, "assistant");
     suggestions.hidden = false;
@@ -37,6 +39,11 @@
   async function send(text, displayText = text) {
     const message = text.trim();
     if (!message || busy) return;
+    if (leadSaved) {
+      addMessage("You're very welcome. Your enquiry is already recorded with the NISCO team. Use a suggestion below to start a new enquiry.", "assistant");
+      input.value = "";
+      return;
+    }
     busy = true;
     suggestions.hidden = true;
     addMessage(displayText, "user");
@@ -57,6 +64,7 @@
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "The assistant is temporarily unavailable.");
       const reply = String(data.reply || "I couldn't prepare a response. Please try again.");
+      if (data.lead_saved === true) leadSaved = true;
       history.push({ role: "assistant", content: reply });
       typing.textContent = reply;
       typing.classList.remove("typing");
