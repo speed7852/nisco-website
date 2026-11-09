@@ -78,7 +78,9 @@ test("phone enquiry saves with phone contact", async () => {
     { role: "assistant", content: contactPrompt }, { role: "user", content: "+966 50 123 4567" },
     { role: "assistant", content: consentPrompt }, { role: "user", content: "Yes" }
   ];
-  const r = await h.send(history);
+  const challenge = await h.send(history.slice(0, 5));
+  assert.ok(challenge.body.consent_token);
+  const r = await h.send(history, h.env.ALLOWED_ORIGIN, challenge.body.consent_token);
   assert.equal(r.body.lead_saved, true);
   assert.equal(h.inserts.length, 1);
   assert.equal(h.inserts[0].values[4], "+966 50 123 4567");
@@ -91,8 +93,10 @@ test("does not save when consent is declined", async () => {
     { role: "user", content: "test@example.com" }, { role: "assistant", content: consentPrompt },
     { role: "user", content: "No" }
   ];
-  const r = await h.send(history);
-  assert.match(r.body.reply, /haven't shared or saved/i);
+  const challenge = await h.send(history.slice(0, 5));
+  assert.ok(challenge.body.consent_token);
+  const r = await h.send(history, h.env.ALLOWED_ORIGIN, challenge.body.consent_token);
+  assert.match(r.body.reply, /haven't saved or shared/i);
   assert.equal(h.inserts.length, 0);
 });
 test("saved conversation cannot create duplicate lead", async () => {
@@ -114,7 +118,9 @@ test("database failure never reports a successful submission", async () => {
     { role: "user", content: "test@example.com" }, { role: "assistant", content: consentPrompt },
     { role: "user", content: "Yes" }
   ];
-  const r = await h.send(history);
+  const challenge = await h.send(history.slice(0, 5));
+  assert.ok(challenge.body.consent_token);
+  const r = await h.send(history, h.env.ALLOWED_ORIGIN, challenge.body.consent_token);
   assert.equal(r.body.lead_saved, undefined);
   assert.match(r.body.reply, /couldn't save/i);
 });
@@ -150,8 +156,6 @@ test("AI chatbot enquiry is guided and saved only after explicit consent", async
   history.push({ role: "assistant", content: contactPrompt }, { role: "user", content: "owner@example.com" });
   r = await h.send(history);
   assert.equal(r.body.reply, consentPrompt);
-  history.push({ role: "assistant", content: consentPrompt }, { role: "user", content: "Yes, I agree" });
-  r = await h.send(history);
   const token = r.body.consent_token; assert.ok(token);
   history.push({ role: "assistant", content: consentPrompt }, { role: "user", content: "Yes, I agree" });
   r = await h.send(history, h.env.ALLOWED_ORIGIN, token);
