@@ -13,10 +13,12 @@
   const welcomeMessage = "Hello! I’m NISCO AI, your business guide. I can help with websites, automation, AI chatbots, digital marketing and ongoing support. I can also explain our India starting prices. What would you like to explore?";
   let busy = false;
   let leadSaved = false;
+  let consentToken = "";
 
   function startFreshConversation() {
     history.length = 0;
     leadSaved = false;
+    consentToken = "";
     messagesEl.replaceChildren();
     addMessage(welcomeMessage, "assistant");
     suggestions.hidden = false;
@@ -55,12 +57,13 @@
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history.slice(-24) })
+        body: JSON.stringify({ messages: history.slice(-24), consent_token: consentToken || undefined })
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "The assistant is temporarily unavailable.");
       const reply = String(data.reply || "I couldn't prepare a response. Please try again.");
-      if (data.lead_saved === true) leadSaved = true;
+      if (data.lead_saved === true) { leadSaved = true; consentToken = ""; }
+      if (typeof data.consent_token === "string") consentToken = data.consent_token;
       history.push({ role: "assistant", content: reply });
       typing.textContent = reply;
       typing.classList.remove("typing");
