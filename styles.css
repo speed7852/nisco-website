@@ -608,3 +608,8 @@ html{scroll-behavior:smooth;scroll-padding-top:92px}
 .hero-rise .summit-art{display:none}
 @media(max-width:900px){.hero-rise{min-height:720px;height:auto}.hero-rise .hero-grid{width:calc(100% - 56px)}.hero-rise h1{font-size:clamp(54px,8.5vw,82px);letter-spacing:-3px}}
 @media(max-width:680px){.hero-rise{min-height:760px;padding:90px 0 55px;background-position:62% center}.hero-rise:before{background:linear-gradient(90deg,rgba(4,17,31,.94),rgba(4,17,31,.72) 70%,rgba(4,17,31,.35)),linear-gradient(0deg,rgba(4,17,31,.55),transparent 50%)}.hero-rise .hero-grid{width:calc(100% - 38px);padding-top:25px}.hero-rise .hero-copy{padding:22px 0 30px}.hero-rise .hero-kicker{font-size:9px;letter-spacing:2px;margin-bottom:32px}.hero-rise .hero-kicker span{padding:0 4px}.hero-rise h1{font-size:clamp(43px,10.5vw,62px);line-height:1.08;letter-spacing:-2.7px;margin-bottom:30px}.hero-rise h1 span:after{height:5px;bottom:-8px}.hero-rise .hero-intro{font-size:16px;line-height:1.65;margin-bottom:27px}.hero-rise .hero-actions{align-items:stretch;flex-direction:column;max-width:290px}.hero-rise .hero-actions .button{width:100%;min-height:48px}}
+
+
+/* Layout audit: the About section contains one content column, so avoid an empty desktop column. */
+.about-grid{grid-template-columns:minmax(0,760px);justify-content:start}
+@media(max-width:900px){.about-grid{grid-template-columns:minmax(0,1fr);gap:32px}}
