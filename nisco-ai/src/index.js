@@ -110,82 +110,107 @@ export default {
     try { body = await request.json(); } catch { return json({ error: "Invalid request." }, 400, allowed); }
     if (!validMessages(body.messages)) return json({ error: "Please send a valid message (up to 2,000 characters)." }, 400, allowed);
 
-    const lastUserMessage = body.messages.filter(m => m.role === "user").slice(-1)[0]?.content || "";
-    const starter = lastUserMessage.toLowerCase();
+    const userMessages = body.messages.filter(m => m.role === "user");
+    const assistantMessages = body.messages.filter(m => m.role === "assistant");
+    const lastUserMessage = userMessages[userMessages.length - 1]?.content || "";
+    const lower = lastUserMessage.trim().toLowerCase();
 
-    // A saved enquiry closes this conversation's lead-capture flow.
-    // Never ask for consent again or attempt to save the same enquiry twice.
-    const enquiryAlreadySaved = body.messages.some(m =>
-      m.role === "assistant" &&
+    // Once saved, close this enquiry. A new quick-start creates a clean history.
+    const alreadySaved = assistantMessages.some(m =>
       /your enquiry has been recorded successfully for the nisco team/i.test(m.content)
     );
-    if (enquiryAlreadySaved) {
+    if (alreadySaved) {
       return json({
-        reply: "You're very welcome. Your enquiry is already recorded with the NISCO team. If you have a different requirement, please start a new conversation.",
+        reply: "You're very welcome. Your enquiry is already recorded with the NISCO team. If you have another requirement, choose a service below to start a new enquiry.",
         lead_saved: true
       }, 200, allowed);
     }
-    if (starter.includes("i need a website") && starter.includes("start by asking what type")) {
-      return json({ reply: "Absolutely. What type of website do you need—for example, a business website, online store, portfolio, or something else?" }, 200, allowed);
-    }
-    if (starter.includes("grow my business") && starter.includes("start by asking")) {
-      return json({ reply: "Great. What does your business do, and what would you most like to improve—brand awareness, customer enquiries, sales, or online visibility?" }, 200, allowed);
-    }
-    if (starter.includes("automate a business process") && starter.includes("start by asking")) {
-      return json({ reply: "Which business process would you like to automate? For example, customer enquiries, reporting, approvals, bookings, or repetitive admin tasks?" }, 200, allowed);
-    }
 
-    const priorAssistantAskedConsent = body.messages.some(m =>
-      m.role === "assistant" &&
-      /consent|permission|agree/i.test(m.content) &&
-      /nisco team|share your details|contact you/i.test(m.content)
-    );
-    const lastUserSaysYes = /^(yes|yes please|i agree|i consent|okay|ok|sure|that's fine|go ahead)$/i.test(lastUserMessage.trim());
-    const messages = [{ role: "system", content: SYSTEM_PROMPT }, ...body.messages];
-    try {
-      const data = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
-        messages,
-        tools: [{
-          name: "capture_lead",
-          description: LEAD_TOOL.function.description,
-          parameters: LEAD_TOOL.function.parameters
-        }],
-        max_tokens: 650,
-        temperature: 0.35
-      });
-      const calls = Array.isArray(data.tool_calls) ? data.tool_calls : [];
-      const call = calls.find(item => (item.name || item.function?.name) === "capture_lead");
-      if (!call) {
-        const reply = data.response || data.content || "How else can I help with your NISCO enquiry?";
-        return json({ reply: String(reply) }, 200, allowed);
+    // A guided enquiry is started only by one of the three service shortcuts.
+    // Ordinary greetings and general questions must never trigger lead consent.
+    const starter = userMessages.find(m => /please guide me through a (website|digital marketing|business transformation) enquiry/i.test(m.content));
+    let service = "";
+    let firstQuestion = "";
+    if (starter) {
+      const prompt = starter.content.toLowerCase();
+      if (prompt.includes("website")) {
+        service = "Digital Solutions - Website";
+        firstQuestion = "Absolutely. What type of website do you need—for example, a business website, online store, portfolio, or something else?";
+      } else if (prompt.includes("digital marketing")) {
+        service = "Digital Marketing";
+        firstQuestion = "Great. What does your business do, and what would you most like to improve—brand awareness, customer enquiries, sales, or online visibility?";
+      } else {
+        service = "Business Transformation";
+        firstQuestion = "Which business process would you like to improve or automate? For example, customer enquiries, reporting, approvals, bookings, or repetitive admin tasks?";
       }
 
-      let args = call.arguments ?? call.function?.arguments ?? {};
-      if (typeof args === "string") {
-        try { args = JSON.parse(args); } catch { args = {}; }
+      const askedFirst = assistantMessages.some(m => m.content === firstQuestion);
+      const contactPrompt = "To prepare your enquiry, please share the email address or phone number the NISCO team should use to contact you.";
+      const consentPrompt = "Before I save this enquiry, may I share the details you've provided with the NISCO team so they can contact you?";
+      const askedContact = assistantMessages.some(m => m.content === contactPrompt);
+      const askedConsent = assistantMessages.some(m => m.content === consentPrompt);
+
+      if (!askedFirst) {
+        return json({ reply: firstQuestion }, 200, allowed);
       }
-      if (!(priorAssistantAskedConsent && lastUserSaysYes)) {
-        return json({ reply: "Before I save this enquiry, may I share the details you've provided with the NISCO team so they can contact you?" }, 200, allowed);
+
+      const emailMatch = [...userMessages].reverse().map(m => m.content.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/i)).find(Boolean);
+      const phoneMatch = [...userMessages].reverse().map(m => m.content.match(/(?:\\+?\\d[\\d\\s().-]{7,}\\d)/)).find(Boolean);
+      const email = emailMatch ? emailMatch[0] : "";
+      const phone = phoneMatch ? phoneMatch[0].trim() : "";
+      const requirementMessages = userMessages
+        .filter(m => m !== starter)
+        .map(m => m.content.trim())
+        .filter(m => m && !/^(yes|yes please|i agree|i consent|okay|ok|sure|no|no thanks|thanks|thank you)$/i.test(m));
+      const summary = requirementMessages.join(" | ").slice(0, 2000);
+
+      if (!askedContact) {
+        return json({ reply: contactPrompt }, 200, allowed);
       }
-      // The visitor's affirmative reply to the preceding consent question is the source of consent.
-      // Do not depend on the model remembering to set its tool argument correctly.
-      args.consent = true;
-      const result = await captureLead(args, env);
+      if (!email && !phone) {
+        return json({ reply: "I couldn't identify an email address or phone number in that message. Please enter the contact email or phone number you'd like the NISCO team to use." }, 200, allowed);
+      }
+      if (!askedConsent) {
+        return json({ reply: consentPrompt }, 200, allowed);
+      }
+
+      const affirmative = /^(yes|yes please|i agree|i consent|okay|ok|sure|that's fine|go ahead|you may share)$/i.test(lower);
+      if (!affirmative) {
+        if (/^(no|no thanks|i do not consent|don't share)$/i.test(lower)) {
+          return json({ reply: "No problem. I haven't shared or saved your details. If you change your mind, let me know." }, 200, allowed);
+        }
+        return json({ reply: "Please reply Yes if you agree to share these enquiry details with the NISCO team, or No if you do not." }, 200, allowed);
+      }
+
+      const result = await captureLead({
+        name: "",
+        email,
+        phone,
+        preferred_contact: email ? "email" : "phone",
+        service,
+        summary: summary || service,
+        timeline: "",
+        consent: true
+      }, env);
       if (result.ok) {
         return json({
           reply: "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided.",
           lead_saved: true
         }, 200, allowed);
       }
-      let reply;
-      if (result.message === "Consent is required before saving.") {
-        reply = "Before I save this enquiry, may I share the details you've provided with the NISCO team so they can contact you?";
-      } else if (result.message === "A contact email or phone number is required.") {
-        reply = "What email address or phone number should the NISCO team use to contact you?";
-      } else {
-        reply = "Could you briefly describe the service you need and what you would like NISCO to help you achieve?";
-      }
-      return json({ reply }, 200, allowed);
+      console.error("NISCO lead capture failed", result.message);
+      return json({ reply: "I couldn't save the enquiry just now. Your details haven't been submitted. Please try again shortly." }, 200, allowed);
+    }
+
+    // General conversation uses the model without any lead-saving tool.
+    try {
+      const data = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...body.messages],
+        max_tokens: 500,
+        temperature: 0.35
+      });
+      const reply = data.response || data.content || "How else can I help with NISCO's services?";
+      return json({ reply: String(reply) }, 200, allowed);
     } catch (error) {
       console.error("NISCO AI error", error);
       return json({ error: "Something went wrong. Please try again shortly." }, 500, allowed);
