@@ -169,6 +169,11 @@ export default {
       return json({ error: "Not found" }, 404, allowed);
     }
     if (!env.DB) return json({ error: "Enquiry storage is not configured yet." }, 503, allowed);
+    const limiter = pathname === "/enquiry" ? env.ENQUIRY_RATE_LIMITER : env.CHAT_RATE_LIMITER;
+    if (!limiter) return json({ error: "Request protection is not configured yet." }, 503, allowed);
+    const clientKey = request.headers.get("CF-Connecting-IP") || "unknown";
+    const { success: withinLimit } = await limiter.limit({ key: clientKey });
+    if (!withinLimit) return json({ error: "Too many requests. Please wait a moment and try again." }, 429, allowed);
 
     if (pathname === "/enquiry") {
       if (!env.BREVO_API_KEY || !env.BREVO_SENDER_EMAIL) {
@@ -176,7 +181,8 @@ export default {
       }
       let enquiry;
       try { enquiry = await request.json(); } catch { return json({ error: "Invalid enquiry." }, 400, allowed); }
-      if (enquiry.website) return json({ success: true }, 200, allowed);
+      if (typeof enquiry.website === "string" && enquiry.website.trim()) return json({ success: true }, 200, allowed);
+      if (JSON.stringify(enquiry).length > 6000) return json({ error: "Enquiry is too large." }, 413, allowed);
       const name = typeof enquiry.name === "string" ? enquiry.name.trim() : "";
       const customerEmail = typeof enquiry.email === "string" ? enquiry.email.trim() : "";
       const business = typeof enquiry.business === "string" ? enquiry.business.trim() : "";
@@ -240,6 +246,7 @@ export default {
 
     let body;
     try { body = await request.json(); } catch { return json({ error: "Invalid request." }, 400, allowed); }
+    if (JSON.stringify(body).length > 12000) return json({ error: "Request is too large." }, 413, allowed);
     if (!validMessages(body.messages)) return json({ error: "Please send a valid message (up to 2,000 characters)." }, 400, allowed);
 
     const userMessages = body.messages.filter(m => m.role === "user");
