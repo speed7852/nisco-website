@@ -10,7 +10,7 @@ NISCO AI is the website assistant for NISCO's India service launch. The static w
   - AI chatbot: ₹10,000 onwards
   - Website maintenance: ₹2,000/month onwards
   - Automation support: ₹3,000/month onwards
-- Answers common location and contact questions (Chennai; Catchnoor@live.in; WhatsApp +91 98945 77373).
+- Answers common location and contact questions (Chennai; Catchnoor@live.in; email nisco.in@outlook.com).
 - Provides guided qualification for website, automation, AI chatbot, digital marketing, website maintenance and automation support enquiries.
 - Stores an enquiry in Cloudflare D1 only after a contact method is supplied and the visitor explicitly consents.
 - Does not send WhatsApp or email notifications, make promises, or submit a quotation.
