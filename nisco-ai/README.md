@@ -28,6 +28,8 @@ The GitHub Actions workflow .github/workflows/deploy-nisco-ai.yml runs the Node 
 Required GitHub Actions secrets:
 - CLOUDFLARE_API_TOKEN
 - CLOUDFLARE_ACCOUNT_ID
+- BREVO_API_KEY (Cloudflare Worker secret; add with `npx wrangler secret put BREVO_API_KEY`)
+- BREVO_SENDER_EMAIL (verified Brevo sender address, configured as a Worker variable in `nisco-ai/wrangler.toml`)
 
 Never commit secrets or put them in browser JavaScript.
 
@@ -53,7 +55,7 @@ The tests use mocked Workers AI and D1 bindings; they do not contact production 
 - A lead is stored only after a visitor provides an email or phone number and explicitly agrees to share the enquiry with NISCO.
 - Declining consent must not create a database record.
 - The visitor is told when an enquiry is successfully saved; failed writes must never be described as successful.
-- No automated email or WhatsApp notification is configured.
+- Website consultation submissions send a transactional notification to nisco.in@outlook.com through Brevo after sender verification and API-key configuration. Chatbot lead capture remains stored in D1 without an automatic email.
 - Before collecting real visitor data, publish a privacy notice covering purpose, access, retention/deletion and contact rights. Restrict D1 access to authorised operators.
 
 ## Release verification
