@@ -15,3 +15,6 @@ migrations_dir = "migrations"
 
 [observability]
 enabled = true
+
+[ai]
+binding = "AI"
