@@ -28,13 +28,15 @@ test("service packages show agreed INR starting prices", () => {
   assert.match(html, /₹3,000\/month/);
 });
 
-test("enquiry form requires consent and prepares an email draft", () => {
+test("enquiry form collects customer email and submits directly to NISCO", () => {
   assert.match(html, /id="nisco-enquiry-form"/);
   assert.match(html, /id="enquiry-consent" required/);
-  assert.match(script, /mailto:/);
-  assert.match(script, /press Send to contact NISCO/);
+  assert.match(html, /id="enquiry-email" name="email" type="email".*required/);
+  assert.match(script, /\/enquiry/);
+  assert.match(script, /Submit Enquiry/);
+  assert.match(script, /Sending your enquiry securely to NISCO/);
   assert.doesNotMatch(script, /wa\.me|whatsapp/i);
-  assert.match(html, /not submitted automatically/i);
+  assert.match(html, /sent securely to NISCO/i);
   assert.match(html, /nisco\.in@outlook\.com/);
   assert.doesNotMatch(html, /Catchnoor@live\.in|98945\s?77373|wa\.me/i);
 });
