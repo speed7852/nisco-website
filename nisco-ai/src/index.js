@@ -1,3 +1,4 @@
+import { handleMcp } from "./mcp.js";
 const SYSTEM_PROMPT = `You are NISCO AI, the virtual business representative for NISCO. NISCO's brand promise is "Built to Rise. Driven to Grow." Be warm, concise, professional and commercially helpful. Use plain, easy-to-understand language and ask one focused question at a time.
 
 NISCO is based in Chennai, India and serves suitable businesses across India. Public contact email: nisco.in@outlook.com. Do not publish or provide a business phone or WhatsApp number.
@@ -194,6 +195,7 @@ export default {
   },
   async fetch(request, env) {
     const url=new URL(request.url),pathname=url.pathname;
+    if(pathname==="/mcp") return handleMcp(request,env);
     if(pathname==="/admin"||pathname.startsWith("/admin/")){if(!["/admin","/admin/"].includes(pathname)&&request.headers.get("Origin")&&request.headers.get("Origin")!==url.origin)return new Response("Origin denied",{status:403});if(!env.DB&&!["/admin","/admin/"].includes(pathname))return json({error:"Database unavailable."},503,"");return adminRoute(request,env,url)}
     const origin=request.headers.get("Origin")||"",allowed=env.ALLOWED_ORIGIN||"https://nisco-website.pages.dev";
     if(origin&&origin!==allowed)return new Response("Origin not allowed",{status:403});
