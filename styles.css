@@ -613,3 +613,21 @@ html{scroll-behavior:smooth;scroll-padding-top:92px}
 /* Layout audit: the About section contains one content column, so avoid an empty desktop column. */
 .about-grid{grid-template-columns:minmax(0,760px);justify-content:start}
 @media(max-width:900px){.about-grid{grid-template-columns:minmax(0,1fr);gap:32px}}
+
+
+/* Mobile viewport containment and horizontal overflow guard */
+html,body{width:100%;max-width:100%;overflow-x:hidden}
+body{min-width:0}
+img,svg,video,canvas,iframe{max-width:100%}
+.container,.hero-grid,.pillar-grid{max-width:100%}
+@media(max-width:680px){
+  .container{width:calc(100% - 36px);margin-left:auto;margin-right:auto}
+  .hero-grid,.pillar-grid{width:calc(100% - 36px);max-width:calc(100% - 36px);margin-left:auto;margin-right:auto}
+  .hero-rise .hero-grid{width:calc(100% - 36px);max-width:calc(100% - 36px)}
+  .site-header,.hero,.hero-rise,.section,.site-footer{max-width:100%;overflow-x:clip}
+  .hero h1,.hero-rise h1,.section-copy h2,.section-heading h2{overflow-wrap:anywhere}
+  .hero-intro,.hero-rise .hero-intro{max-width:100%;overflow-wrap:anywhere}
+  .footer-links{max-width:100%;flex-wrap:wrap}
+  .footer-bottom{min-width:0;overflow-wrap:anywhere}
+  .nisco-chat{max-width:calc(100vw - 20px)}
+}
