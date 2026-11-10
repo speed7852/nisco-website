@@ -16,7 +16,10 @@ function harness() {
           async run() {
             if (sql.startsWith("INSERT INTO lead_consent_challenges")) challenges.set(values[0], { id: values[0], expires_at: values[2], email: values[3], phone: values[4], service: values[5], summary: values[6], used_at: null });
             if (sql.startsWith("UPDATE lead_consent_challenges")) { const item = challenges.get(values[1]); if (item && !item.used_at) { item.used_at = values[0]; return { success: true, meta: { changes: 1 } }; } return { success: true, meta: { changes: 0 } }; }
-            if (sql.startsWith("INSERT INTO leads")) inserts.push({ sql, values });
+            if (sql.startsWith("INSERT INTO leads")) {
+              if (env.failLeadInsert) throw new Error("D1 unavailable");
+              inserts.push({ sql, values });
+            }
             return { success: true, meta: { changes: 1 } };
           },
           async first() { return challenges.get(values[0]) || null; }
@@ -80,7 +83,7 @@ test("phone enquiry saves with phone contact", async () => {
   ];
   const challenge = await h.send(history.slice(0, 5));
   assert.ok(challenge.body.consent_token);
-  h.env.DB.prepare = () => ({ bind: () => ({ run: async () => { throw new Error("D1 unavailable"); } }) });
+  
   const r = await h.send(history, h.env.ALLOWED_ORIGIN, challenge.body.consent_token);
   assert.equal(r.body.lead_saved, true);
   assert.equal(h.inserts.length, 1);
@@ -120,6 +123,7 @@ test("database failure never reports a successful submission", async () => {
   ];
   const challenge = await h.send(history.slice(0, 5));
   assert.ok(challenge.body.consent_token);
+  h.env.failLeadInsert = true;
   const r = await h.send(history, h.env.ALLOWED_ORIGIN, challenge.body.consent_token);
   assert.equal(r.body.lead_saved, undefined);
   assert.match(r.body.reply, /couldn't save/i);
