@@ -69,7 +69,7 @@ test("new sections have responsive styles", () => {
 test("security headers and enquiry copy are configured", () => {
   assert.match(headers, /X-Content-Type-Options: nosniff/);
   assert.match(headers, /X-Frame-Options: DENY/);
-  assert.match(headers, /Content-Security-Policy-Report-Only:/);
+  assert.match(headers, /Content-Security-Policy:/);
   assert.match(headers, /Permissions-Policy:/);
   assert.match(html, /sent directly to the NISCO team/i);
   assert.doesNotMatch(html, /email app will prepare/i);
