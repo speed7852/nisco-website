@@ -263,7 +263,8 @@ export default {
       const consumed = await env.DB.prepare("UPDATE lead_consent_challenges SET used_at = ? WHERE id = ? AND used_at IS NULL AND expires_at > ?").bind(new Date().toISOString(), challenge.id, new Date().toISOString()).run();
       if (consumed.meta?.changes !== 1) return json({ reply: "This consent request has already been used or has expired. Please start a new enquiry." }, 200, allowed);
       try {
-        await captureLead({ email: challenge.email, phone: challenge.phone, preferred_contact: challenge.email ? "email" : "phone", service: challenge.service, summary: challenge.summary, consent: true }, env);
+        const saved = await captureLead({ email: challenge.email, phone: challenge.phone, preferred_contact: challenge.email ? "email" : "phone", service: challenge.service, summary: challenge.summary, consent: true }, env);
+        if (!saved?.ok) return json({ reply: "I couldn't save the enquiry just now. Your details haven't been submitted. Please try again shortly." }, 200, allowed);
         return json({ reply: "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided.", lead_saved: true }, 200, allowed);
       } catch (error) { console.error("NISCO lead capture failed", error); return json({ reply: "I couldn't save the enquiry just now. Your details haven't been submitted. Please try again shortly." }, 200, allowed); }
     }
