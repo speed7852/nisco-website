@@ -178,6 +178,7 @@ export default {
     const cutoff = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
     await env.DB.prepare("DELETE FROM leads WHERE created_at < ?").bind(cutoff).run();
     await env.DB.prepare("DELETE FROM lead_consent_challenges WHERE expires_at < ? OR used_at IS NOT NULL").bind(now).run();
+    await env.DB.prepare("DELETE FROM security_audit_log WHERE created_at < ?").bind(new Date(Date.now() - 730 * 24 * 60 * 60 * 1000).toISOString()).run();
     await env.DB.prepare("INSERT INTO security_audit_log (created_at, action) VALUES (?, 'scheduled-retention-cleanup')").bind(now).run();
   },
   async fetch(request, env) {
@@ -271,7 +272,7 @@ export default {
           })
         });
         if (!mailResponse.ok) {
-          console.error("NISCO email delivery failed", mailResponse.status, (await mailResponse.text()).slice(0, 500));
+          console.error("NISCO email delivery failed", mailResponse.status);
           return json({ error: "We couldn't send your enquiry just now. Please try again shortly." }, 502, allowed);
         }
         const messageId = (await mailResponse.json()).messageId || "";
