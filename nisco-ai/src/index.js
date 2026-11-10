@@ -96,10 +96,33 @@ function json(data, status, origin) {
       "Cache-Control": "no-store",
       "Access-Control-Allow-Origin": origin,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Vary": "Origin"
     }
   });
+}
+
+async function readJsonLimited(request, maxBytes) {
+  const declared = Number(request.headers.get("Content-Length") || 0);
+  if (declared > maxBytes) return { error: "Request is too large.", status: 413 };
+  if (!request.body) return { error: "Request body is required.", status: 400 };
+  const reader = request.body.getReader();
+  const chunks = [];
+  let total = 0;
+  try {
+    while (true) {
+      const part = await reader.read();
+      if (part.done) break;
+      total += part.value.byteLength;
+      if (total > maxBytes) { await reader.cancel(); return { error: "Request is too large.", status: 413 }; }
+      chunks.push(part.value);
+    }
+  } finally { reader.releaseLock(); }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  try { return { data: JSON.parse(new TextDecoder().decode(bytes)) }; }
+  catch { return { error: "Invalid JSON request.", status: 400 }; }
 }
 
 function validMessages(messages) {
@@ -150,10 +173,18 @@ async function captureLead(args, env) {
 }
 
 export default {
+  async scheduled(controller, env) {
+    const now = new Date().toISOString();
+    const cutoff = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+    await env.DB.prepare("DELETE FROM leads WHERE created_at < ?").bind(cutoff).run();
+    await env.DB.prepare("DELETE FROM lead_consent_challenges WHERE expires_at < ? OR used_at IS NOT NULL").bind(now).run();
+    await env.DB.prepare("INSERT INTO security_audit_log (created_at, action) VALUES (?, 'scheduled-retention-cleanup')").bind(now).run();
+  },
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
     const allowed = env.ALLOWED_ORIGIN || "https://nisco-website.pages.dev";
-    if (origin !== allowed) return new Response("Origin not allowed", { status: 403 });
+    if (origin && origin !== allowed) return new Response("Origin not allowed", { status: 403 });
+    if (!origin && new URL(request.url).pathname !== "/admin/delete-lead") return new Response("Origin required", { status: 403 });
     if (request.method === "OPTIONS") return new Response(null, {
       status: 204,
       headers: {
@@ -165,10 +196,22 @@ export default {
       }
     });
     const pathname = new URL(request.url).pathname;
-    if (request.method !== "POST" || !["/chat", "/enquiry"].includes(pathname)) {
+    if (request.method !== "POST" || !["/chat", "/enquiry", "/admin/delete-lead"].includes(pathname)) {
       return json({ error: "Not found" }, 404, allowed);
     }
     if (!env.DB) return json({ error: "Enquiry storage is not configured yet." }, 503, allowed);
+    if (pathname === "/admin/delete-lead") {
+      if (!env.ADMIN_API_TOKEN) return json({ error: "Administrative deletion is not configured." }, 503, allowed);
+      const auth = request.headers.get("Authorization") || "";
+      if (!auth.startsWith("Bearer ") || auth.slice(7) !== env.ADMIN_API_TOKEN) return json({ error: "Unauthorized." }, 401, allowed);
+      const parsed = await readJsonLimited(request, 1024);
+      if (parsed.error) return json({ error: parsed.error }, parsed.status, allowed);
+      const leadId = typeof parsed.data?.lead_id === "string" ? parsed.data.lead_id.trim() : "";
+      if (!/^[0-9a-f-]{36}$/i.test(leadId)) return json({ error: "A valid lead_id is required." }, 400, allowed);
+      const deleted = await env.DB.prepare("DELETE FROM leads WHERE id = ?").bind(leadId).run();
+      if (deleted.meta?.changes === 1) await env.DB.prepare("INSERT INTO security_audit_log (created_at, action) VALUES (?, 'admin-lead-deleted')").bind(new Date().toISOString()).run();
+      return json({ success: true, deleted: deleted.meta?.changes === 1 }, 200, allowed);
+    }
     const limiter = pathname === "/enquiry" ? env.ENQUIRY_RATE_LIMITER : env.CHAT_RATE_LIMITER;
     if (!limiter) return json({ error: "Request protection is not configured yet." }, 503, allowed);
     const clientKey = request.headers.get("CF-Connecting-IP") || "unknown";
@@ -179,10 +222,12 @@ export default {
       if (!env.BREVO_API_KEY || !env.BREVO_SENDER_EMAIL) {
         return json({ error: "Email delivery is not configured yet. Please try again later." }, 503, allowed);
       }
-      let enquiry;
-      try { enquiry = await request.json(); } catch { return json({ error: "Invalid enquiry." }, 400, allowed); }
+      if (!(request.headers.get("Content-Type") || "").toLowerCase().includes("application/json")) return json({ error: "Content-Type must be application/json." }, 415, allowed);
+      const parsed = await readJsonLimited(request, 6000);
+      if (parsed.error) return json({ error: parsed.error }, parsed.status, allowed);
+      const enquiry = parsed.data;
+      if (!enquiry || typeof enquiry !== "object" || Array.isArray(enquiry)) return json({ error: "Invalid enquiry." }, 400, allowed);
       if (typeof enquiry.website === "string" && enquiry.website.trim()) return json({ success: true }, 200, allowed);
-      if (JSON.stringify(enquiry).length > 6000) return json({ error: "Enquiry is too large." }, 413, allowed);
       const name = typeof enquiry.name === "string" ? enquiry.name.trim() : "";
       const customerEmail = typeof enquiry.email === "string" ? enquiry.email.trim() : "";
       const business = typeof enquiry.business === "string" ? enquiry.business.trim() : "";
@@ -244,9 +289,11 @@ export default {
     }
     if (!env.AI) return json({ error: "Cloudflare Workers AI binding is not configured yet." }, 503, allowed);
 
-    let body;
-    try { body = await request.json(); } catch { return json({ error: "Invalid request." }, 400, allowed); }
-    if (JSON.stringify(body).length > 12000) return json({ error: "Request is too large." }, 413, allowed);
+    if (!(request.headers.get("Content-Type") || "").toLowerCase().includes("application/json")) return json({ error: "Content-Type must be application/json." }, 415, allowed);
+    const parsed = await readJsonLimited(request, 12000);
+    if (parsed.error) return json({ error: parsed.error }, parsed.status, allowed);
+    const body = parsed.data;
+    if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "Invalid request." }, 400, allowed);
     if (!validMessages(body.messages)) return json({ error: "Please send a valid message (up to 2,000 characters)." }, 400, allowed);
 
     if (body.consent_token) {
@@ -273,16 +320,6 @@ export default {
     const assistantMessages = body.messages.filter(m => m.role === "assistant");
     const lastUserMessage = userMessages[userMessages.length - 1]?.content || "";
     const lower = lastUserMessage.trim().toLowerCase();
-
-    const alreadySaved = assistantMessages.some(m =>
-      /your enquiry has been recorded successfully for the nisco team/i.test(m.content)
-    );
-    if (alreadySaved) {
-      return json({
-        reply: "You're very welcome. Your enquiry is already recorded with the NISCO team. If you have another requirement, choose a service below to start a new enquiry.",
-        lead_saved: true
-      }, 200, allowed);
-    }
 
     const starter = userMessages.find(m => /please guide me through (?:a|an) (website|digital marketing|business transformation|business automation|ai chatbot|website maintenance|automation support) enquiry/i.test(m.content));
     if (starter) {
