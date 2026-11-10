@@ -173,107 +173,14 @@ async function captureLead(args, env) {
 }
 
 
-const ADMIN_HTML = String.raw`<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101d2d"><title>NISCO Admin</title>
-<style>
-*{box-sizing:border-box}body{margin:0;background:#f3f5f8;color:#182333;font:15px system-ui,-apple-system,Segoe UI,sans-serif}.top{background:#101d2d;color:white;padding:18px max(18px,calc((100% - 1080px)/2));display:flex;justify-content:space-between;align-items:center}.brand{font-weight:850;letter-spacing:2px}.brand b{color:#c9a96e}main{max-width:1080px;margin:28px auto;padding:0 16px}.panel{background:#fff;border:1px solid #e2e7ee;border-radius:14px;padding:20px;box-shadow:0 6px 24px #10203008}.login{max-width:420px;margin:9vh auto}h1{margin:0 0 8px}.muted,small{color:#657184}label{display:block;font-weight:650;margin:14px 0 6px}input,select{width:100%;padding:12px;border:1px solid #cbd3de;border-radius:8px;font:inherit;background:white}button{border:0;border-radius:8px;background:#101d2d;color:white;padding:11px 15px;font-weight:650;cursor:pointer}button.gold{background:#c9a96e;color:#182333}button.danger{background:#a52d36}.hidden{display:none!important}.row{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}.stat{background:white;border:1px solid #e2e7ee;border-radius:12px;padding:16px}.stat strong{display:block;font-size:26px}.toolbar{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:9px;margin:18px 0}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:690px}th,td{text-align:left;padding:12px 9px;border-bottom:1px solid #e7ebf0;vertical-align:top}th{font-size:12px;color:#657184;text-transform:uppercase}td small{display:block;margin-top:4px}.actions{display:flex;gap:6px}.actions button{padding:8px 10px}.status{padding:10px;background:#edf1f5;border-radius:8px;margin:12px 0}.detail{white-space:pre-wrap;line-height:1.6}.empty{text-align:center;padding:30px;color:#657184}@media(max-width:650px){.toolbar{grid-template-columns:1fr 1fr}.toolbar input{grid-column:1/-1}.stats{grid-template-columns:1fr 1fr}.panel{padding:14px}}
-</style></head><body><header class="top"><div class="brand">NISCO<b>.</b> ADMIN</div><button id="logout" class="hidden">Sign out</button></header><main>
-<section id="login" class="panel login"><h1>Admin sign in</h1><p class="muted">Private access to NISCO customer enquiries.</p><form id="loginForm"><label for="token">Admin access token</label><input id="token" type="password" autocomplete="current-password" required><button class="gold" style="width:100%;margin-top:16px">Sign in securely</button></form><p id="loginMsg" class="muted" role="status"></p></section>
-<section id="dashboard" class="hidden"><div class="row"><div><h1>Enquiry dashboard</h1><p class="muted">Live records from NISCO D1</p></div><button id="refresh">Refresh</button></div><div class="stats"><div class="stat"><span class="muted">Total enquiries</span><strong id="total">—</strong></div><div class="stat"><span class="muted">Today</span><strong id="today">—</strong></div><div class="stat"><span class="muted">Services</span><strong id="services">—</strong></div></div><div id="msg" class="status">Loading…</div>
-<div class="toolbar"><input id="search" placeholder="Search name, email, phone or details"><select id="service"><option value="">All services</option></select><select id="period"><option value="">Any date</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select><button id="apply" class="gold">Apply</button></div>
-<div class="panel tablewrap"><table><thead><tr><th>Customer</th><th>Service</th><th>Enquiry</th><th>Received</th><th>Actions</th></tr></thead><tbody id="leads"></tbody></table><div id="empty" class="empty hidden">No enquiries match these filters.</div></div><h2>Recent admin activity</h2><div class="panel" id="audit"><p class="muted">Loading…</p></div></section>
-<section id="detail" class="panel hidden"><div class="row"><h2>Enquiry details</h2><button id="back">Back</button></div><div id="detailBody" class="detail"></div></section></main>
-<script>
-const $=id=>document.getElementById(id);let records=[];
-async function api(path,options={}){const r=await fetch(path,{credentials:'same-origin',...options,headers:{'Content-Type':'application/json',...(options.headers||{})}});let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.error||'Request failed ('+r.status+')');return d}
-function show(id){['login','dashboard','detail'].forEach(x=>$(x).classList.toggle('hidden',x!==id));$('logout').classList.toggle('hidden',id==='login')}
-$('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginMsg').textContent='Signing in…';try{await api('/admin/login',{method:'POST',body:JSON.stringify({token:$('token').value})});$('token').value='';show('dashboard');await load()}catch(err){$('loginMsg').textContent=err.message;$('token').value=''}});
-$('logout').onclick=async()=>{try{await api('/admin/logout',{method:'POST',body:'{}'})}catch{}show('login')};$('refresh').onclick=load;$('apply').onclick=load;
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-async function load(){$('msg').textContent='Refreshing…';try{const q=new URLSearchParams({q:$('search').value,service:$('service').value,period:$('period').value});const d=await api('/admin/leads?'+q);records=d.leads||[];$('total').textContent=d.total;$('today').textContent=d.today;$('services').textContent=d.service_count;const selected=$('service').value;const options=[...new Set(records.map(x=>x.service).filter(Boolean))].sort();$('service').innerHTML='<option value="">All services</option>'+options.map(x=>'<option>'+esc(x)+'</option>').join('');$('service').value=selected;$('leads').innerHTML=records.map(x=>'<tr><td><strong>'+esc(x.name||'Not provided')+'</strong><small>'+esc(x.email||x.phone||'No contact')+'</small></td><td>'+esc(x.service)+'</td><td>'+esc(x.summary).slice(0,220)+'<small>'+esc(x.source)+'</small></td><td>'+esc(new Date(x.created_at).toLocaleString())+'</td><td><div class="actions"><button data-view="'+esc(x.id)+'">View</button><button class="danger" data-delete="'+esc(x.id)+'">Delete</button></div></td></tr>').join('');$('empty').classList.toggle('hidden',records.length!==0);$('msg').textContent='Updated just now · '+records.length+' record(s) shown';const a=await api('/admin/audit');$('audit').innerHTML=a.events.length?a.events.map(x=>'<p><strong>'+esc(x.action)+'</strong><small>'+esc(new Date(x.created_at).toLocaleString())+'</small></p>').join(''):'<p class="muted">No admin activity yet.</p>'}catch(e){$('msg').textContent=e.message;if(e.message.includes('Unauthorized'))show('login')}}
-$('leads').addEventListener('click',async e=>{const v=e.target.closest('[data-view]'),d=e.target.closest('[data-delete]');if(v){const x=records.find(y=>y.id===v.dataset.view);if(x){$('detailBody').textContent=Object.entries(x).map(([k,val])=>k.replaceAll('_',' ').toUpperCase()+': '+(val??'')).join('\\n\\n');show('detail')}}if(d){const x=records.find(y=>y.id===d.dataset.delete);if(!x||!confirm('Permanently delete this enquiry?'))return;try{await api('/admin/delete-lead',{method:'POST',body:JSON.stringify({lead_id:x.id})});await load()}catch(err){alert(err.message)}}});
-$('back').onclick=()=>show('dashboard');(async()=>{try{await api('/admin/session');show('dashboard');await load()}catch{show('login')}})();
+const ADMIN_HTML = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NISCO Admin</title><style>body{font:15px system-ui;background:#f3f5f8;color:#172536;margin:0}header{background:#101d2d;color:white;padding:18px 5%;font-weight:800}main{max-width:1000px;margin:24px auto;padding:0 14px}.card{background:white;border:1px solid #ddd;border-radius:12px;padding:18px;margin:14px 0}input,select{padding:11px;border:1px solid #ccd4df;border-radius:7px;margin:5px}button{padding:10px 14px;border:0;border-radius:7px;background:#14263c;color:white}table{width:100%;border-collapse:collapse;min-width:600px}td,th{text-align:left;padding:10px;border-bottom:1px solid #ddd}.wrap{overflow:auto}.hidden{display:none}.row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.stats{display:flex;gap:10px}.stats div{background:white;padding:14px;border:1px solid #ddd;border-radius:9px;flex:1}.stats b{display:block;font-size:24px}.muted{color:#667}</style></head><body><header>NISCO ADMIN</header><main><section id="login" class="card"><h2>Admin sign in</h2><form id="form"><input id="token" type="password" placeholder="Admin API token" required><button>Sign in</button></form><p id="notice"></p></section><section id="app" class="hidden"><div class="row"><h1>Customer enquiries</h1><button id="refresh">Refresh</button></div><div class="stats"><div>Total<b id="total">0</b></div><div>Today<b id="today">0</b></div><div>Services<b id="services">0</b></div></div><div class="card"><input id="q" placeholder="Search enquiries"><select id="period"><option value="">All dates</option><option value="today">Today</option><option value="7">7 days</option><option value="30">30 days</option></select><button id="filter">Search</button></div><div class="card wrap"><table><thead><tr><th>Customer</th><th>Service</th><th>Requirement</th><th>Date</th><th></th></tr></thead><tbody id="rows"></tbody></table></div><h2>Audit activity</h2><div id="audit" class="card"></div><button id="logout">Sign out</button></section></main><script>
+const $=x=>document.getElementById(x);let list=[];async function api(p,o={}){let r=await fetch(p,{credentials:'same-origin',...o,headers:{'Content-Type':'application/json',...(o.headers||{})}});let d=await r.json();if(!r.ok)throw Error(d.error||'Request failed');return d}function esc(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}async function load(){try{let d=await api('/admin/leads?q='+encodeURIComponent($('q').value)+'&period='+$('period').value);list=d.leads;$('total').textContent=d.total;$('today').textContent=d.today;$('services').textContent=d.service_count;$('rows').innerHTML=list.map(x=>'<tr><td>'+esc(x.name)+'<br>'+esc(x.email||x.phone)+'</td><td>'+esc(x.service)+'</td><td>'+esc(x.summary)+'</td><td>'+esc(new Date(x.created_at).toLocaleString())+'</td><td><button data-id="'+esc(x.id)+'">Delete</button></td></tr>').join('');let a=await api('/admin/audit');$('audit').textContent=a.events.map(x=>x.action+' — '+x.created_at).join('\n')||'No activity'}catch(e){$('notice').textContent=e.message}}$('form').onsubmit=async e=>{e.preventDefault();try{await api('/admin/login',{method:'POST',body:JSON.stringify({token:$('token').value})});$('token').value='';$('login').classList.add('hidden');$('app').classList.remove('hidden');await load()}catch(x){$('notice').textContent=x.message}};$('refresh').onclick=load;$('filter').onclick=load;$('logout').onclick=async()=>{await api('/admin/logout',{method:'POST',body:'{}'});$('app').classList.add('hidden');$('login').classList.remove('hidden')};$('rows').onclick=async e=>{let b=e.target.closest('[data-id]');if(b&&confirm('Permanently delete this enquiry?')){await api('/admin/delete-lead',{method:'POST',body:JSON.stringify({lead_id:b.dataset.id})});await load()}};(async()=>{try{await api('/admin/session');$('login').classList.add('hidden');$('app').classList.remove('hidden');await load()}catch{}})();
 </script></body></html>`;
-
-function adminCookie(value, maxAge) {
-  return "nisco_admin=" + value + "; Path=/admin; HttpOnly; Secure; SameSite=Strict; Max-Age=" + maxAge;
-}
-function base64url(bytes) {
-  return btoa(String.fromCharCode(...bytes)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-}
-async function signAdminSession(payload, secret) {
-  const data = base64url(new TextEncoder().encode(JSON.stringify(payload)));
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const sig = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data)));
-  return data + "." + base64url(sig);
-}
-async function isAdminSession(request, secret) {
-  try {
-    const cookie = (request.headers.get("Cookie") || "").split(";").map(x => x.trim()).find(x => x.startsWith("nisco_admin="));
-    if (!cookie) return false;
-    const token = cookie.slice("nisco_admin=".length);
-    const [data, signature] = token.split(".");
-    if (!data || !signature) return false;
-    const raw = atob(data.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - data.length % 4) % 4));
-    const payload = JSON.parse(raw);
-    if (!payload || payload.exp <= Math.floor(Date.now() / 1000)) return false;
-    const expected = await signAdminSession(payload, secret);
-    return expected === token;
-  } catch { return false; }
-}
-async function adminRoute(request, env, url) {
-  if (!env.ADMIN_API_TOKEN) return json({ error: "Admin access is not configured." }, 503, "");
-  const path = url.pathname;
-  if (path === "/admin" || path === "/admin/") {
-    return new Response(ADMIN_HTML, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer", "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'" } });
-  }
-  if (request.method === "POST" && path === "/admin/login") {
-    if (request.headers.get("Origin") !== url.origin) return json({ error: "Origin not allowed." }, 403, "");
-    const parsed = await readJsonLimited(request, 2048);
-    if (parsed.error) return json({ error: parsed.error }, parsed.status, "");
-    if (parsed.data?.token !== env.ADMIN_API_TOKEN) return json({ error: "Invalid admin token." }, 401, "");
-    const session = await signAdminSession({ exp: Math.floor(Date.now() / 1000) + 8 * 60 * 60 }, env.ADMIN_API_TOKEN);
-    return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "Set-Cookie": adminCookie(session, 8 * 60 * 60) } });
-  }
-  if (request.method === "POST" && path === "/admin/logout") {
-    if (request.headers.get("Origin") !== url.origin) return json({ error: "Origin not allowed." }, 403, "");
-    return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", "Set-Cookie": adminCookie("", 0), "Cache-Control": "no-store" } });
-  }
-  if (!await isAdminSession(request, env.ADMIN_API_TOKEN)) return json({ error: "Unauthorized." }, 401, "");
-  if (request.method === "GET" && path === "/admin/session") return json({ authenticated: true }, 200, "");
-  if (request.method === "GET" && path === "/admin/leads") {
-    const q = (url.searchParams.get("q") || "").trim().slice(0, 120);
-    const service = (url.searchParams.get("service") || "").trim().slice(0, 120);
-    const period = url.searchParams.get("period") || "";
-    const clauses = [], values = [];
-    if (q) { clauses.push("(name LIKE ? OR email LIKE ? OR phone LIKE ? OR summary LIKE ?)"); const like = "%" + q.replace(/[%_]/g, "\\export default {
-  async scheduled") + "%"; values.push(like, like, like, like); }
-    if (service) { clauses.push("service = ?"); values.push(service); }
-    if (period === "today") clauses.push("date(created_at) = date('now')");
-    if (period === "7" || period === "30") { clauses.push("created_at >= ?"); values.push(new Date(Date.now() - Number(period) * 86400000).toISOString()); }
-    const where = clauses.length ? " WHERE " + clauses.join(" AND ") : "";
-    const rows = await env.DB.prepare("SELECT id, created_at, name, email, phone, preferred_contact, service, summary, timeline, consent, source FROM leads" + where + " ORDER BY created_at DESC LIMIT 500").bind(...values).all();
-    const total = await env.DB.prepare("SELECT COUNT(*) AS n FROM leads").first();
-    const today = await env.DB.prepare("SELECT COUNT(*) AS n FROM leads WHERE date(created_at) = date('now')").first();
-    const services = await env.DB.prepare("SELECT COUNT(DISTINCT service) AS n FROM leads").first();
-    return json({ leads: rows.results || [], total: total?.n || 0, today: today?.n || 0, service_count: services?.n || 0 }, 200, "");
-  }
-  if (request.method === "GET" && path === "/admin/audit") {
-    const rows = await env.DB.prepare("SELECT created_at, action FROM security_audit_log ORDER BY created_at DESC LIMIT 20").all();
-    return json({ events: rows.results || [] }, 200, "");
-  }
-  if (request.method === "POST" && path === "/admin/delete-lead") {
-    if (request.headers.get("Origin") !== url.origin) return json({ error: "Origin not allowed." }, 403, "");
-    const parsed = await readJsonLimited(request, 1024);
-    if (parsed.error) return json({ error: parsed.error }, parsed.status, "");
-    const id = typeof parsed.data?.lead_id === "string" ? parsed.data.lead_id.trim() : "";
-    if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: "A valid lead_id is required." }, 400, "");
-    const deleted = await env.DB.prepare("DELETE FROM leads WHERE id = ?").bind(id).run();
-    if (deleted.meta?.changes === 1) await env.DB.prepare("INSERT INTO security_audit_log (created_at, action) VALUES (?, 'admin-lead-deleted')").bind(new Date().toISOString()).run();
-    return json({ success: true, deleted: deleted.meta?.changes === 1 }, 200, "");
-  }
-  return json({ error: "Not found" }, 404, "");
-}
+function adminCookie(v,age){return "nisco_admin="+v+"; Path=/admin; HttpOnly; Secure; SameSite=Strict; Max-Age="+age}
+function b64(v){return btoa(String.fromCharCode(...v)).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_")}
+async function adminSign(p,s){let d=b64(new TextEncoder().encode(JSON.stringify(p))),k=await crypto.subtle.importKey("raw",new TextEncoder().encode(s),{name:"HMAC",hash:"SHA-256"},false,["sign"]),sig=await crypto.subtle.sign("HMAC",k,new TextEncoder().encode(d));return d+"."+b64(new Uint8Array(sig))}
+async function adminValid(req,s){try{let x=(req.headers.get("Cookie")||"").split(";").map(v=>v.trim()).find(v=>v.startsWith("nisco_admin="));if(!x)return false;let t=x.slice(12),d=t.split(".")[0],p=JSON.parse(atob(d.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-d.length%4)%4)));return p.exp>Date.now()/1000&&await adminSign(p,s)===t}catch{return false}}
+async function adminRoute(req,env,url){if(!env.ADMIN_API_TOKEN)return json({error:"Admin is not configured."},503,"");let p=url.pathname;if(p==="/admin"||p==="/admin/")return new Response(ADMIN_HTML,{headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store","X-Frame-Options":"DENY","X-Content-Type-Options":"nosniff","Content-Security-Policy":"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"}});if(req.method==="POST"&&p==="/admin/login"){if(req.headers.get("Origin")!==url.origin)return json({error:"Origin denied."},403,"");let b=await readJsonLimited(req,2048);if(b.error)return json({error:b.error},b.status,"");if(b.data?.token!==env.ADMIN_API_TOKEN)return json({error:"Invalid admin token."},401,"");let v=await adminSign({exp:Date.now()/1000+28800},env.ADMIN_API_TOKEN);return new Response('{"success":true}',{headers:{"Content-Type":"application/json","Cache-Control":"no-store","Set-Cookie":adminCookie(v,28800)}})}if(req.method==="POST"&&p==="/admin/logout"){if(req.headers.get("Origin")!==url.origin)return json({error:"Origin denied."},403,"");return new Response('{"success":true}',{headers:{"Content-Type":"application/json","Set-Cookie":adminCookie("",0)}})}if(!await adminValid(req,env.ADMIN_API_TOKEN))return json({error:"Unauthorized."},401,"");if(req.method==="GET"&&p==="/admin/session")return json({authenticated:true},200,"");if(req.method==="GET"&&p==="/admin/leads"){let q=(url.searchParams.get("q")||"").slice(0,100),period=url.searchParams.get("period"),w=[],v=[];if(q){w.push("(name LIKE ? OR email LIKE ? OR phone LIKE ? OR summary LIKE ?)");v.push("%"+q+"%","%"+q+"%","%"+q+"%","%"+q+"%")}if(period==="today")w.push("date(created_at)=date('now')");if(period==="7"||period==="30"){w.push("created_at>=?");v.push(new Date(Date.now()-Number(period)*86400000).toISOString())}let clause=w.length?" WHERE "+w.join(" AND "):"",rows=await env.DB.prepare("SELECT id,created_at,name,email,phone,service,summary,source FROM leads"+clause+" ORDER BY created_at DESC LIMIT 500").bind(...v).all(),total=await env.DB.prepare("SELECT COUNT(*) n FROM leads").first(),today=await env.DB.prepare("SELECT COUNT(*) n FROM leads WHERE date(created_at)=date('now')").first(),services=await env.DB.prepare("SELECT COUNT(DISTINCT service) n FROM leads").first();return json({leads:rows.results||[],total:total?.n||0,today:today?.n||0,service_count:services?.n||0},200,"")}if(req.method==="GET"&&p==="/admin/audit"){let a=await env.DB.prepare("SELECT created_at,action FROM security_audit_log ORDER BY created_at DESC LIMIT 20").all();return json({events:a.results||[]},200,"")}if(req.method==="POST"&&p==="/admin/delete-lead"){if(req.headers.get("Origin")!==url.origin)return json({error:"Origin denied."},403,"");let b=await readJsonLimited(req,1024);if(b.error)return json({error:b.error},b.status,"");let id=b.data?.lead_id||"";if(!/^[0-9a-f-]{36}$/i.test(id))return json({error:"Invalid lead ID."},400,"");let d=await env.DB.prepare("DELETE FROM leads WHERE id=?").bind(id).run();if(d.meta?.changes===1)await env.DB.prepare("INSERT INTO security_audit_log (created_at,action) VALUES (?, 'admin-lead-deleted')").bind(new Date().toISOString()).run();return json({success:true,deleted:d.meta?.changes===1},200,"")}return json({error:"Not found"},404,"")}
 
 
 export default {
@@ -286,32 +193,15 @@ export default {
     await env.DB.prepare("INSERT INTO security_audit_log (created_at, action) VALUES (?, 'scheduled-retention-cleanup')").bind(now).run();
   },
   async fetch(request, env) {
-    const url = new URL(request.url);
-    const pathname = url.pathname;
-    if (pathname === "/admin" || pathname.startsWith("/admin/")) {
-      if (!["/admin", "/admin/"].includes(pathname) && request.headers.get("Origin") && request.headers.get("Origin") !== url.origin) return new Response("Origin not allowed", { status: 403 });
-      if (!env.DB && !["/admin", "/admin/"].includes(pathname)) return json({ error: "Enquiry storage is not configured yet." }, 503, "");
-      return adminRoute(request, env, url);
-    }
-    const origin = request.headers.get("Origin") || "";
-    const allowed = env.ALLOWED_ORIGIN || "https://nisco-website.pages.dev";
-    if (origin && origin !== allowed) return new Response("Origin not allowed", { status: 403 });
-    if (!origin && pathname !== "/admin/delete-lead") return new Response("Origin required", { status: 403 });
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: { "Access-Control-Allow-Origin": allowed, "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Authorization", "Access-Control-Max-Age": "86400", "Vary": "Origin" } });
-    if (request.method !== "POST" || !["/chat", "/enquiry", "/admin/delete-lead"].includes(pathname)) return json({ error: "Not found" }, 404, allowed);
-    if (!env.DB) return json({ error: "Enquiry storage is not configured yet." }, 503, allowed);
-    if (pathname === "/admin/delete-lead") {
-      if (!env.ADMIN_API_TOKEN) return json({ error: "Administrative deletion is not configured." }, 503, allowed);
-      const auth = request.headers.get("Authorization") || "";
-      if (!auth.startsWith("Bearer ") || auth.slice(7) !== env.ADMIN_API_TOKEN) return json({ error: "Unauthorized." }, 401, allowed);
-      const parsed = await readJsonLimited(request, 1024);
-      if (parsed.error) return json({ error: parsed.error }, parsed.status, allowed);
-      const leadId = typeof parsed.data?.lead_id === "string" ? parsed.data.lead_id.trim() : "";
-      if (!/^[0-9a-f-]{36}$/i.test(leadId)) return json({ error: "A valid lead_id is required." }, 400, allowed);
-      const deleted = await env.DB.prepare("DELETE FROM leads WHERE id = ?").bind(leadId).run();
-      if (deleted.meta?.changes === 1) await env.DB.prepare("INSERT INTO security_audit_log (created_at, action) VALUES (?, 'admin-lead-deleted')").bind(new Date().toISOString()).run();
-      return json({ success: true, deleted: deleted.meta?.changes === 1 }, 200, allowed);
-    }
+    const url=new URL(request.url),pathname=url.pathname;
+    if(pathname==="/admin"||pathname.startsWith("/admin/")){if(!["/admin","/admin/"].includes(pathname)&&request.headers.get("Origin")&&request.headers.get("Origin")!==url.origin)return new Response("Origin denied",{status:403});if(!env.DB&&!["/admin","/admin/"].includes(pathname))return json({error:"Database unavailable."},503,"");return adminRoute(request,env,url)}
+    const origin=request.headers.get("Origin")||"",allowed=env.ALLOWED_ORIGIN||"https://nisco-website.pages.dev";
+    if(origin&&origin!==allowed)return new Response("Origin not allowed",{status:403});
+    if(!origin&&pathname!=="/admin/delete-lead")return new Response("Origin required",{status:403});
+    if(request.method==="OPTIONS")return new Response(null,{status:204,headers:{"Access-Control-Allow-Origin":allowed,"Access-Control-Allow-Methods":"POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type, Authorization","Access-Control-Max-Age":"86400","Vary":"Origin"}});
+    if(request.method!=="POST"||!["/chat","/enquiry","/admin/delete-lead"].includes(pathname))return json({error:"Not found"},404,allowed);
+    if(!env.DB)return json({error:"Enquiry storage is not configured yet."},503,allowed);
+    if(pathname==="/admin/delete-lead"){if(!env.ADMIN_API_TOKEN)return json({error:"Administrative deletion is not configured."},503,allowed);const auth=request.headers.get("Authorization")||"";if(!auth.startsWith("Bearer ")||auth.slice(7)!==env.ADMIN_API_TOKEN)return json({error:"Unauthorized."},401,allowed);const parsed=await readJsonLimited(request,1024);if(parsed.error)return json({error:parsed.error},parsed.status,allowed);const id=typeof parsed.data?.lead_id==="string"?parsed.data.lead_id.trim():"";if(!/^[0-9a-f-]{36}$/i.test(id))return json({error:"A valid lead_id is required."},400,allowed);const deleted=await env.DB.prepare("DELETE FROM leads WHERE id=?").bind(id).run();if(deleted.meta?.changes===1)await env.DB.prepare("INSERT INTO security_audit_log (created_at,action) VALUES (?, 'admin-lead-deleted')").bind(new Date().toISOString()).run();return json({success:true,deleted:deleted.meta?.changes===1},200,allowed)}
     const limiter = pathname === "/enquiry" ? env.ENQUIRY_RATE_LIMITER : env.CHAT_RATE_LIMITER;
     if (!limiter) return json({ error: "Request protection is not configured yet." }, 503, allowed);
     const clientKey = request.headers.get("CF-Connecting-IP") || "unknown";
