@@ -631,3 +631,80 @@ img,svg,video,canvas,iframe{max-width:100%}
   .footer-bottom{min-width:0;overflow-wrap:anywhere}
   .nisco-chat{max-width:calc(100vw - 20px)}
 }
+
+
+/* Final mobile repair: keep every layout box inside the visual viewport. */
+@media (max-width: 680px) {
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+  }
+  body > *, main, header, footer, section, nav, aside {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .container,
+  .hero-grid,
+  .pillar-grid {
+    width: calc(100% - 32px) !important;
+    max-width: calc(100% - 32px) !important;
+    min-width: 0 !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  .hero,
+  .hero-rise,
+  .site-header,
+  .site-footer,
+  .section,
+  .approach-section {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+  .hero-copy,
+  .section-copy,
+  .consultation-grid,
+  .footer-main,
+  .footer-bottom,
+  .nav-wrap {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .hero h1,
+  .hero-rise h1,
+  .section h2,
+  .approach-section h2,
+  .contact-panel h2 {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+  .hero-actions {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+  .hero-actions .button {
+    max-width: 100%;
+    white-space: normal;
+  }
+  .division-grid,
+  .package-grid,
+  .portfolio-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-width: 0;
+  }
+  .division-card,
+  .package-card,
+  .portfolio-card,
+  .enquiry-form {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .nisco-chat {
+    right: 12px;
+    max-width: calc(100% - 24px);
+  }
+}
