@@ -15,7 +15,7 @@ test("India contact details and Chennai positioning are configured", () => {
   assert.match(config, /nisco\.in@outlook\.com/);
   assert.doesNotMatch(config, /whatsapp|919894577373/i);
   assert.match(config, /Chennai/);
-  assert.match(html, /Chennai, India/);
+  assert.match(html, /India &amp; Saudi Arabia/);
   assert.match(html, /TECHNOLOGY.*BUSINESS.*PEOPLE/);
   assert.match(html, /Built to Rise\.<br><span>Driven to Grow\.<\/span>/);
 });
