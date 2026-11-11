@@ -38,23 +38,22 @@ if (toggle && nav) {
 const year = document.getElementById("year");
 if (year) year.textContent = new Date().getFullYear();
 
-// Before launch, replace CONTACT_EMAIL_PLACEHOLDER in index.html with your business email.
-
-
 // Subtle scroll reveals: premium, restrained, and accessible.
 (() => {
   const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (reduceMotion || !("IntersectionObserver" in window)) return;
 
   const revealTargets = [
-    [".about-section .section-copy", "left"],
-    [".about-section .about-visual", "right"],
-    [".section-heading", "up"],
-    [".division-card", "up"],
-    [".approach-section .container > div:first-child", "left"],
-    [".approach-point", "right"],
-    [".contact-panel > div", "left"],
-    [".contact-panel > a", "right"],
+    [".services-intro", "left"],
+    [".service-card", "up"],
+    [".why-image", "left"],
+    [".why-copy", "right"],
+    [".proof-grid > div", "up"],
+    [".work-heading", "left"],
+    [".work-card", "up"],
+    [".insights-inner > div", "up"],
+    [".consultation-copy", "left"],
+    [".enquiry-form", "right"],
     [".footer-main > div", "up"]
   ];
 
@@ -89,6 +88,7 @@ if (year) year.textContent = new Date().getFullYear();
   if (!form) return;
   const note = document.getElementById("enquiry-form-note");
   const submit = form.querySelector('button[type="submit"]');
+  if (submit) submit.dataset.defaultHtml = submit.innerHTML;
   const config = window.NISCO_CONFIG || {};
   document.querySelectorAll(".package-cta[data-service]").forEach(link => link.addEventListener("click", () => {
     const select = document.getElementById("enquiry-service");
@@ -101,6 +101,7 @@ if (year) year.textContent = new Date().getFullYear();
     const payload = {
       name: String(values.get("name") || "").trim(),
       email: String(values.get("email") || "").trim(),
+      phone: String(values.get("phone") || "").trim(),
       business: String(values.get("business") || "").trim(),
       service: String(values.get("service") || "").trim(),
       budget: String(values.get("budget") || "").trim(),
@@ -108,7 +109,11 @@ if (year) year.textContent = new Date().getFullYear();
       consent: document.getElementById("enquiry-consent")?.checked === true,
       website: String(values.get("website") || "")
     };
-    if (submit) { submit.disabled = true; submit.textContent = "Sending…"; }
+    if (submit) {
+      submit.disabled = true;
+      submit.setAttribute("aria-busy", "true");
+      submit.textContent = "Sending…";
+    }
     if (note) note.textContent = "Sending your enquiry securely to NISCO…";
     try {
       const response = await fetch((config.workerUrl || "https://nisco-ai.speedhome7852.workers.dev") + "/enquiry", {
@@ -123,7 +128,11 @@ if (year) year.textContent = new Date().getFullYear();
     } catch (error) {
       if (note) note.textContent = error.message || "We couldn't send your enquiry. Please try again shortly.";
     } finally {
-      if (submit) { submit.disabled = false; submit.textContent = "Submit Enquiry →"; }
+      if (submit) {
+        submit.disabled = false;
+        submit.removeAttribute("aria-busy");
+        submit.innerHTML = submit.dataset.defaultHtml || 'Request a Consultation <span>→</span>';
+      }
     }
   });
 })();
