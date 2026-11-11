@@ -294,3 +294,23 @@ test("Arabic pricing questions receive approved INR prices without saving a lead
   assert.match(r.body.reply, /روبية هندية/);
   assert.equal(h.inserts.length, 0);
 });
+
+
+test("verified knowledge centre answers NISCO service questions in English and Arabic", async () => {
+  const h = harness();
+  const en = await h.send([{ role: "user", content: "What services does NISCO offer?" }]);
+  assert.match(en.body.reply, /digital marketing/i);
+  assert.match(en.body.reply, /Power BI/i);
+  assert.equal(en.body.knowledge_source, "services");
+  const ar = await h.send([{ role: "user", content: "ما هي الخدمات التي تقدمونها؟" }]);
+  assert.match(ar.body.reply, /التسويق الرقمي/);
+  assert.equal(ar.body.knowledge_source, "services");
+  assert.equal(h.inserts.length, 0);
+});
+
+test("verified knowledge centre never invents a delivery commitment", async () => {
+  const h = harness();
+  const r = await h.send([{ role: "user", content: "What is your process and timeline?" }]);
+  assert.match(r.body.reply, /does not guarantee|No delivery date/i);
+  assert.equal(r.body.knowledge_source, "process");
+});
