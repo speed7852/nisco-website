@@ -42,7 +42,7 @@ function harness() {
 const starter = "I need a website. Please guide me through a website enquiry and ask one question at a time. Start by asking what type of website I need.";
 const firstQuestion = "Absolutely. What type of website do you need—for example, a business website, online store, portfolio, or something else?";
 const contactPrompt = "To prepare your enquiry, please share the email address or phone number the NISCO team should use to contact you.";
-const consentPrompt = "Before I save this enquiry: your contact details and requirement summary will be stored in NISCO's enquiry database for the team to review and follow up. No automatic WhatsApp or email will be sent. Do you agree to share and save these details?";
+const consentPrompt = "Before I save this enquiry: your contact details and requirement summary will be stored in NISCO's enquiry database for the team to review and follow up. If configured, an email notification will be sent to NISCO. Do you agree to share and save these details?";
 
 test("validates origin, method, path and payload", async () => {
   const h = harness();
@@ -313,4 +313,12 @@ test("verified knowledge centre never invents a delivery commitment", async () =
   const r = await h.send([{ role: "user", content: "What is your process and timeline?" }]);
   assert.match(r.body.reply, /does not guarantee|No delivery date/i);
   assert.equal(r.body.knowledge_source, "process");
+});
+
+
+test("Arabic guided website enquiry starts with a localized question", async () => {
+  const h = harness();
+  const r = await h.send([{ role: "user", content: "أرشدني خلال استفسار موقع إلكتروني" }]);
+  assert.match(r.body.reply, /ما نوع الموقع الذي تحتاج إليه/);
+  assert.equal(h.inserts.length, 0);
 });
