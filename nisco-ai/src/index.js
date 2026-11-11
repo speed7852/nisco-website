@@ -393,11 +393,11 @@ export default {
       return json({ reply: consentPrompt + " Please use the consent prompt shown above to continue." }, 200, allowed);
     }
 
-    const knowledge = lookupNiscoKnowledge(lastUserMessage);
-    if (knowledge) return json({ reply: knowledge.answer, knowledge_source: knowledge.source, knowledge_version: knowledge.version }, 200, allowed);
-
     const businessInfoReply = getBusinessInfoReply(lastUserMessage);
     if (businessInfoReply) return json({ reply: businessInfoReply }, 200, allowed);
+
+    const knowledge = lookupNiscoKnowledge(lastUserMessage);
+    if (knowledge) return json({ reply: knowledge.answer, knowledge_source: knowledge.source, knowledge_version: knowledge.version }, 200, allowed);
 
     try {
       const data = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
