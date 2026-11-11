@@ -24,9 +24,11 @@ test("premium homepage has the approved visual sections", () => {
   for (const section of ["hero-rise", "services-section", "why-section", "proof-strip", "work-section", "insights-section", "consultation-section"]) {
     assert.match(html, new RegExp(section));
   }
-  assert.match(html, /Digital Solutions/);
-  assert.match(html, /AI &amp; Automation/);
-  assert.match(html, /Cloud &amp; Integration/);
+  for (const division of ["Digital Marketing", "Digital Solutions", "Business Transformation", "Business &amp; Trading Services"]) assert.ok(html.includes(division), division + " division missing");
+  for (const service of ["Social media management", "SEO &amp; content marketing", "Website development &amp; maintenance", "AI chatbots &amp; guided enquiries", "Power BI dashboards &amp; reporting", "Microsoft 365 &amp; SharePoint solutions", "Real-estate-related services", "Cattle feed &amp; livestock supplies", "Trading, distribution &amp; future ventures"]) assert.ok(html.includes(service), service + " missing");
+  assert.match(html, /Specific business and trading activities are subject to availability/);
+  assert.match(html, /Real-estate-related services/);
+  assert.match(html, /Cattle feed \/ livestock supplies/);
   assert.match(css, /Playfair Display/);
   assert.match(css, /--navy:#06182a/);
   assert.match(css, /--gold:#e7b650/);
