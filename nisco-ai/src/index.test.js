@@ -284,3 +284,13 @@ test("admin lead deletion accepts a valid bearer token and records an audit even
   assert.equal(response.status, 200);
   assert.equal((await response.json()).deleted, true);
 });
+
+
+test("Arabic pricing questions receive approved INR prices without saving a lead", async () => {
+  const h = harness();
+  const r = await h.send([{ role: "user", content: "كم سعر روبوت المحادثة؟" }]);
+  assert.equal(r.status, 200);
+  assert.match(r.body.reply, /10,000/);
+  assert.match(r.body.reply, /روبية هندية/);
+  assert.equal(h.inserts.length, 0);
+});
