@@ -4,7 +4,7 @@ NISCO AI is the guided business assistant embedded in the NISCO static website. 
 
 ## Current capabilities
 
-- Supports English, Tamil and Modern Standard Arabic responses; Arabic messages are rendered right-to-left in the website chat widget.
+- Supports English and Modern Standard Arabic responses; Arabic messages are rendered right-to-left in the website chat widget.
 - Explains NISCO's services: digital solutions, AI and automation, consulting, cloud and integration, digital marketing, and selected business services.
 - Gives approved India starting prices only:
   - Business website: ₹15,000 onwards
@@ -14,7 +14,7 @@ NISCO AI is the guided business assistant embedded in the NISCO static website. 
   - Automation support: ₹3,000/month onwards
 - Answers public location and contact questions: Chennai, India; nisco.in@outlook.com.
 - Provides guided qualification for website, automation, AI chatbot, digital marketing, website maintenance and automation support.
-- Stores chat enquiries in Cloudflare D1 only after a contact method is supplied and the visitor explicitly consents. English, Tamil and Arabic consent replies are recognised.
+- Stores chat enquiries in Cloudflare D1 only after a contact method is supplied and the visitor explicitly consents. English and Arabic consent replies are recognised.
 - Does not automatically send WhatsApp or email notifications for chatbot-captured leads.
 
 Prices are indicative starting prices, not fixed quotations. Scope, integrations, licences, hosting, taxes and third-party costs must be confirmed in writing.
