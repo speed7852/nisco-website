@@ -195,7 +195,7 @@ test("website enquiry sends a transactional email and records the lead", async (
       method: "POST",
       headers: { Origin: h.env.ALLOWED_ORIGIN, "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: "Test Customer", email: "customer@example.com", business: "Java",
+        name: "Test Customer", email: "customer@example.com", phone: "+91 98765 43210", business: "Java",
         service: "AI chatbot", budget: "Below ₹15,000",
         requirement: "Need an enquiry chatbot", consent: true, website: ""
       })
@@ -208,8 +208,10 @@ test("website enquiry sends a transactional email and records the lead", async (
     assert.equal(sent.to[0].email, "nisco.in@outlook.com");
     assert.equal(sent.replyTo.email, "customer@example.com");
     assert.match(sent.textContent, /Need an enquiry chatbot/);
+    assert.match(sent.textContent, /Phone: \+91 98765 43210/);
     assert.equal(h.inserts.length, 1);
     assert.equal(h.inserts[0].values[3], "customer@example.com");
+    assert.equal(h.inserts[0].values[4], "+91 98765 43210");
   } finally {
     globalThis.fetch = originalFetch;
   }
