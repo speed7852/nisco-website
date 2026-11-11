@@ -16,3 +16,10 @@ Install @playwright/test and @axe-core/playwright, install Chromium with Playwri
 Run the NISCO Lighthouse Quality Audit workflow from GitHub Actions or let it run after the website test workflow succeeds. It audits the deployed Pages URL and uploads a temporary report link.
 
 Automated audits do not replace manual review of visual design, real-device behaviour, content accuracy, SEO strategy or security configuration. Scores start as warnings so baseline issues do not block deployment.
+
+
+## Professional design system
+- `DESIGN-SYSTEM.md` is the source of truth for NISCO brand foundations, typography, layout, components, accessibility and responsive standards.
+- `scripts/check-design-system.mjs` validates required CSS tokens, focus visibility, reduced motion, responsive rules and semantic navigation.
+- `.github/workflows/design-system.yml` runs the design-system checks on relevant pushes, pull requests and manual dispatches.
+- Follow the documented Discover → Define → Systemize → Implement → Review → Automate → Release → Record workflow for every substantial design change.
