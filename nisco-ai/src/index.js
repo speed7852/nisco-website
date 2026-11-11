@@ -1,7 +1,7 @@
 import { handleMcp } from "./mcp.js";
 const SYSTEM_PROMPT = `Language policy:
-- Support English and Modern Standard Arabic. Detect the latest user message language and reply in that language unless the visitor asks otherwise.
-- For Arabic, use clear professional Modern Standard Arabic. Preserve NISCO facts and approved prices exactly, and identify prices as Indian rupees (INR), not Saudi riyals.
+- Support English, Tamil and Modern Standard Arabic. Detect the latest user message language and reply in that language unless the visitor asks otherwise.
+- For Arabic, use clear professional Modern Standard Arabic. For Tamil, use clear, natural Tamil script. Preserve NISCO facts and approved prices exactly, and identify prices as Indian rupees (INR), not Saudi riyals.
 - Never translate or alter the public email nisco.in@outlook.com.
 - Keep answers concise, ask one focused question at a time, and do not mix languages unless the visitor does.
 
@@ -310,21 +310,30 @@ export default {
 
     if (body.consent_token) {
       const lastMessage = body.messages.filter(m => m.role === "user").at(-1)?.content.trim().toLowerCase() || "";
-      const affirmative = /^(yes|yes please|yes[, ]+i agree|i agree|i consent|okay|ok|sure|that's fine|go ahead|you may share)[.! ]*$/i.test(lastMessage);
-      const negative = /^(no|no thanks|i do not consent|don't share)[.! ]*$/i.test(lastMessage);
-      if (!affirmative && !negative) return json({ reply: "Please reply Yes to agree to share your enquiry with NISCO, or No to decline." }, 200, allowed);
+      const affirmative = /^(yes|yes please|yes[, ]+i agree|i agree|i consent|okay|ok|sure|that's fine|go ahead|you may share|ஆம்|ஆமாம்|சம்மதம்|ஒப்புக்கொள்கிறேன்|نعم|أوافق|موافق|موافقة)[.!، ]*$/i.test(lastMessage);
+      const negative = /^(no|no thanks|i do not consent|don't share|இல்லை|வேண்டாம்|சம்மதம் இல்லை|لا|لا أوافق|غير موافق)[.!، ]*$/i.test(lastMessage);
+      if (!affirmative && !negative) {
+        const consentReminder = /[؀-ۿ]/.test(lastMessage)
+          ? "يرجى الرد بنعم للموافقة على مشاركة استفسارك مع NISCO، أو لا للرفض."
+          : /[஀-௿]/.test(lastMessage)
+            ? "உங்கள் விசாரணையை NISCO உடன் பகிர சம்மதம் தெரிவிக்க ‘ஆம்’ என்றும், மறுக்க ‘இல்லை’ என்றும் பதிலளிக்கவும்."
+            : "Please reply Yes to agree to share your enquiry with NISCO, or No to decline.";
+        return json({ reply: consentReminder }, 200, allowed);
+      }
       const challenge = await env.DB.prepare("SELECT * FROM lead_consent_challenges WHERE id = ?").bind(String(body.consent_token).slice(0, 64)).first();
       if (!challenge || challenge.used_at || Date.parse(challenge.expires_at) <= Date.now()) return json({ reply: "This consent request has expired. Please start a new enquiry if you would like the NISCO team to contact you." }, 200, allowed);
       if (negative) {
         await env.DB.prepare("UPDATE lead_consent_challenges SET used_at = ? WHERE id = ? AND used_at IS NULL").bind(new Date().toISOString(), challenge.id).run();
-        return json({ reply: "No problem. I haven't saved or shared your details." }, 200, allowed);
+        const declinedReply = /[؀-ۿ]/.test(lastMessage) ? "لا مشكلة. لم أحفظ بياناتك أو أشاركها." : /[஀-௿]/.test(lastMessage) ? "பரவாயில்லை. உங்கள் விவரங்களை நான் சேமிக்கவோ பகிரவோ இல்லை." : "No problem. I haven't saved or shared your details.";
+        return json({ reply: declinedReply }, 200, allowed);
       }
       const consumed = await env.DB.prepare("UPDATE lead_consent_challenges SET used_at = ? WHERE id = ? AND used_at IS NULL AND expires_at > ?").bind(new Date().toISOString(), challenge.id, new Date().toISOString()).run();
       if (consumed.meta?.changes !== 1) return json({ reply: "This consent request has already been used or has expired. Please start a new enquiry." }, 200, allowed);
       try {
         const saved = await captureLead({ email: challenge.email, phone: challenge.phone, preferred_contact: challenge.email ? "email" : "phone", service: challenge.service, summary: challenge.summary, consent: true }, env);
         if (!saved?.ok) return json({ reply: "I couldn't save the enquiry just now. Your details haven't been submitted. Please try again shortly." }, 200, allowed);
-        return json({ reply: "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided.", lead_saved: true }, 200, allowed);
+        const savedReply = /[؀-ۿ]/.test(lastMessage) ? "நன்றி. உங்கள் விசாரணை NISCO குழுவிற்காக வெற்றிகரமாக பதிவு செய்யப்பட்டது. நீங்கள் வழங்கிய தொடர்பு விவரங்கள் மூலம் குழு உங்களைத் தொடர்புகொள்ளலாம்." : /[஀-௿]/.test(lastMessage) ? "நன்றி. உங்கள் விசாரணை NISCO குழுவிற்காக வெற்றிகரமாக பதிவு செய்யப்பட்டது. நீங்கள் வழங்கிய தொடர்பு விவரங்கள் மூலம் குழு உங்களைத் தொடர்புகொள்ளலாம்." : "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided.";
+        return json({ reply: savedReply, lead_saved: true }, 200, allowed);
       } catch (error) { console.error("NISCO lead capture failed", error); return json({ reply: "I couldn't save the enquiry just now. Your details haven't been submitted. Please try again shortly." }, 200, allowed); }
     }
 
