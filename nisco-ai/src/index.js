@@ -1,5 +1,12 @@
 import { handleMcp } from "./mcp.js";
-const SYSTEM_PROMPT = `You are NISCO AI, the virtual business representative for NISCO. NISCO's brand promise is "Built to Rise. Driven to Grow." Be warm, concise, professional and commercially helpful. Use plain, easy-to-understand language and ask one focused question at a time.
+import { lookupNiscoKnowledge } from "./knowledge.js";
+const SYSTEM_PROMPT = `Language policy:
+- Support English and Modern Standard Arabic. Detect the latest user message language and reply in that language unless the visitor asks otherwise.
+- For Arabic, use clear professional Modern Standard Arabic. Preserve NISCO facts and approved prices exactly, and identify prices as Indian rupees (INR), not Saudi riyals.
+- Never translate or alter the public email nisco.in@outlook.com.
+- Keep answers concise, ask one focused question at a time, and do not mix languages unless the visitor does.
+
+You are NISCO AI, the virtual business representative for NISCO. NISCO's brand promise is "Built to Rise. Driven to Grow." Be warm, concise, professional and commercially helpful. Use plain, easy-to-understand language and ask one focused question at a time.
 
 NISCO is based in Chennai, India and serves suitable businesses across India. Public contact email: nisco.in@outlook.com. Do not publish or provide a business phone or WhatsApp number.
 
@@ -136,6 +143,18 @@ function validMessages(messages) {
 
 function getBusinessInfoReply(message) {
   const lower = message.toLowerCase();
+  if (/[؀-ۿ]/.test(message)) {
+    if (/سعر|الأسعار|التكلفة|كم يكلف|كم السعر|تكلفة/.test(message)) {
+      if (/صيانة/.test(message)) return "تبدأ صيانة المواقع لدى NISCO من 2,000 روبية هندية شهرياً. تعتمد الخطة النهائية على المنصة والتحديثات والنسخ الاحتياطي والأمان ونطاق الدعم.";
+      if (/روبوت|شات بوت|محادث/.test(message)) return "يبدأ إعداد روبوت المحادثة بالذكاء الاصطناعي لدى NISCO من 10,000 روبية هندية. يعتمد السعر النهائي على المحتوى ومسار الاستفسارات والتكاملات ومتطلبات النشر.";
+      if (/أتمتة|تلقائي|لوحة معلومات|باور بي آي/.test(message)) return "تبدأ خدمات أتمتة الأعمال من 15,000 روبية هندية. تعتمد التكلفة النهائية على العمليات والتكاملات والتقارير ومدى التعقيد.";
+      if (/موقع|ويب|متجر إلكتروني/.test(message)) return "يبدأ إنشاء موقع الأعمال لدى NISCO من 15,000 روبية هندية. السعر استرشادي ويعتمد العرض النهائي على نطاق العمل والمحتوى والتكاملات.";
+      return "الأسعار الاسترشادية في الهند: موقع الأعمال 15,000 روبية هندية، أتمتة الأعمال 15,000 روبية، روبوت المحادثة 10,000 روبية، صيانة الموقع 2,000 روبية شهرياً، ودعم الأتمتة 3,000 روبية شهرياً. هذه أسعار بداية وليست عروضاً نهائية.";
+    }
+    if (/تواصل|واتساب|رقم الهاتف|البريد|شخص|موظف/.test(message)) return "يمكنك التواصل مع NISCO عبر البريد الإلكتروني nisco.in@outlook.com. يمكنني أيضاً مساعدتك في إعداد استفسار لفريق NISCO.";
+    if (/أين|الموقع|مقر|المدينة/.test(message)) return "يقع مقر NISCO في تشيناي، الهند، ويمكن للفريق مناقشة المشاريع المناسبة عن بُعد مع الشركات في الهند.";
+  }
+
   const asksPrice = /\b(price|pricing|cost|how much|rate|charges|starting price|budget)\b/.test(lower);
   if (asksPrice) {
     if (/maintenance/.test(lower)) return "Website maintenance starts from ₹2,000 per month. The final plan depends on the website platform, updates, backups, security and support scope.";
@@ -154,23 +173,39 @@ function getBusinessInfoReply(message) {
   return "";
 }
 
+function scoreLead(service, summary, timeline) {
+  const text = (String(service) + ' ' + String(summary) + ' ' + String(timeline)).toLowerCase();
+  let score = 25;
+  if (/urgent|asap|immediately|this week|عاجل|فوراً/.test(text)) score += 25;
+  if (/budget|quotation|proposal|price|ميزانية|عرض سعر/.test(text)) score += 10;
+  if (/business|company|team|شركة|مؤسسة/.test(text)) score += 10;
+  if (/website|automation|chatbot|marketing|موقع|أتمتة|روبوت/.test(text)) score += 10;
+  if (String(summary).trim().length > 100) score += 10;
+  score = Math.min(100, score);
+  return { score, priority: score >= 70 ? 'high' : 'standard' };
+}
+
+async function notifyChatLead(args, leadId, score, env) {
+  if (!env.BREVO_API_KEY || !env.BREVO_SENDER_EMAIL) return false;
+  const details = ['A new consented enquiry was captured by NISCO AI.', 'Lead ID: ' + leadId, 'Priority: ' + score.priority + ' (' + score.score + '/100)', 'Service: ' + String(args.service).slice(0, 120), 'Name: ' + String(args.name || 'Not provided').slice(0, 120), 'Email: ' + String(args.email || 'Not provided').slice(0, 254), 'Phone: ' + String(args.phone || 'Not provided').slice(0, 40), 'Requirement: ' + String(args.summary).slice(0, 2000), 'Timeline: ' + String(args.timeline || 'Not provided').slice(0, 160)].join('\n');
+  try {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { accept: 'application/json', 'api-key': env.BREVO_API_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ sender: { name: 'NISCO AI', email: env.BREVO_SENDER_EMAIL }, to: [{ email: 'nisco.in@outlook.com', name: 'NISCO' }], subject: '[NISCO AI] ' + score.priority.toUpperCase() + ' enquiry — ' + String(args.service).slice(0, 80), textContent: details }) });
+    if (!response.ok) { console.error('NISCO chat lead notification failed', response.status); return false; }
+    return true;
+  } catch (error) { console.error('NISCO chat lead notification error', error); return false; }
+}
+
 async function captureLead(args, env) {
-  if (args.consent !== true) return { ok: false, message: "Consent is required before saving." };
-  const email = typeof args.email === "string" ? args.email.trim().slice(0, 254) : "";
-  const phone = typeof args.phone === "string" ? args.phone.trim().slice(0, 40) : "";
-  if (!email && !phone) return { ok: false, message: "A contact email or phone number is required." };
-  if (!args.service || !args.summary) return { ok: false, message: "Service and enquiry summary are required." };
+  if (args.consent !== true) return { ok: false, message: 'Consent is required before saving.' };
+  const email = typeof args.email === 'string' ? args.email.trim().slice(0, 254) : '';
+  const phone = typeof args.phone === 'string' ? args.phone.trim().slice(0, 40) : '';
+  if (!email && !phone) return { ok: false, message: 'A contact email or phone number is required.' };
+  if (!args.service || !args.summary) return { ok: false, message: 'Service and enquiry summary are required.' };
   const id = crypto.randomUUID();
-  await env.DB.prepare(
-    "INSERT INTO leads (id, created_at, name, email, phone, preferred_contact, service, summary, timeline, consent, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'website-chat')"
-  ).bind(
-    id, new Date().toISOString(),
-    String(args.name || "").slice(0, 120), email, phone,
-    String(args.preferred_contact || "either").slice(0, 12),
-    String(args.service).slice(0, 120), String(args.summary).slice(0, 2000),
-    String(args.timeline || "").slice(0, 160)
-  ).run();
-  return { ok: true, lead_id: id };
+  const score = scoreLead(args.service, args.summary, args.timeline);
+  await env.DB.prepare("INSERT INTO leads (id, created_at, name, email, phone, preferred_contact, service, summary, timeline, consent, source, lead_score, lead_priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'website-chat', ?, ?)").bind(id, new Date().toISOString(), String(args.name || '').slice(0, 120), email, phone, String(args.preferred_contact || 'either').slice(0, 12), String(args.service).slice(0, 120), String(args.summary).slice(0, 2000), String(args.timeline || '').slice(0, 160), score.score, score.priority).run();
+  const notified = await notifyChatLead({ ...args, email, phone }, id, score, env);
+  return { ok: true, lead_id: id, lead_score: score.score, lead_priority: score.priority, notified };
 }
 
 
@@ -181,7 +216,7 @@ function adminCookie(v,age){return "nisco_admin="+v+"; Path=/admin; HttpOnly; Se
 function b64(v){return btoa(String.fromCharCode(...v)).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_")}
 async function adminSign(p,s){let d=b64(new TextEncoder().encode(JSON.stringify(p))),k=await crypto.subtle.importKey("raw",new TextEncoder().encode(s),{name:"HMAC",hash:"SHA-256"},false,["sign"]),sig=await crypto.subtle.sign("HMAC",k,new TextEncoder().encode(d));return d+"."+b64(new Uint8Array(sig))}
 async function adminValid(req,s){try{let x=(req.headers.get("Cookie")||"").split(";").map(v=>v.trim()).find(v=>v.startsWith("nisco_admin="));if(!x)return false;let t=x.slice(12),d=t.split(".")[0],p=JSON.parse(atob(d.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-d.length%4)%4)));return p.exp>Date.now()/1000&&await adminSign(p,s)===t}catch{return false}}
-async function adminRoute(req,env,url){if(!env.ADMIN_API_TOKEN)return json({error:"Admin is not configured."},503,"");let p=url.pathname;if(p==="/admin"||p==="/admin/")return new Response(ADMIN_HTML,{headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store","X-Frame-Options":"DENY","X-Content-Type-Options":"nosniff","Content-Security-Policy":"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"}});if(req.method==="POST"&&p==="/admin/login"){if(req.headers.get("Origin")!==url.origin)return json({error:"Origin denied."},403,"");let b=await readJsonLimited(req,2048);if(b.error)return json({error:b.error},b.status,"");if(b.data?.token!==env.ADMIN_API_TOKEN)return json({error:"Invalid admin token."},401,"");let v=await adminSign({exp:Date.now()/1000+28800},env.ADMIN_API_TOKEN);return new Response('{"success":true}',{headers:{"Content-Type":"application/json","Cache-Control":"no-store","Set-Cookie":adminCookie(v,28800)}})}if(req.method==="POST"&&p==="/admin/logout"){if(req.headers.get("Origin")!==url.origin)return json({error:"Origin denied."},403,"");return new Response('{"success":true}',{headers:{"Content-Type":"application/json","Set-Cookie":adminCookie("",0)}})}const auth=req.headers.get("Authorization")||"";const bearerOk=p==="/admin/delete-lead"&&auth.startsWith("Bearer ")&&auth.slice(7)===env.ADMIN_API_TOKEN;const sessionOk=await adminValid(req,env.ADMIN_API_TOKEN);if(!sessionOk&&!bearerOk)return json({error:"Unauthorized."},401,"");if(req.method==="GET"&&p==="/admin/session")return json({authenticated:true},200,"");if(req.method==="GET"&&p==="/admin/leads"){let q=(url.searchParams.get("q")||"").slice(0,100),period=url.searchParams.get("period"),w=[],v=[];if(q){w.push("(name LIKE ? OR email LIKE ? OR phone LIKE ? OR summary LIKE ?)");v.push("%"+q+"%","%"+q+"%","%"+q+"%","%"+q+"%")}if(period==="today")w.push("date(created_at)=date('now')");if(period==="7"||period==="30"){w.push("created_at>=?");v.push(new Date(Date.now()-Number(period)*86400000).toISOString())}let clause=w.length?" WHERE "+w.join(" AND "):"",rows=await env.DB.prepare("SELECT id,created_at,name,email,phone,service,summary,source FROM leads"+clause+" ORDER BY created_at DESC LIMIT 500").bind(...v).all(),total=await env.DB.prepare("SELECT COUNT(*) n FROM leads").first(),today=await env.DB.prepare("SELECT COUNT(*) n FROM leads WHERE date(created_at)=date('now')").first(),services=await env.DB.prepare("SELECT COUNT(DISTINCT service) n FROM leads").first();return json({leads:rows.results||[],total:total?.n||0,today:today?.n||0,service_count:services?.n||0},200,"")}if(req.method==="GET"&&p==="/admin/audit"){let a=await env.DB.prepare("SELECT created_at,action FROM security_audit_log ORDER BY created_at DESC LIMIT 20").all();return json({events:a.results||[]},200,"")}if(req.method==="POST"&&p==="/admin/delete-lead"){const origin=req.headers.get("Origin");const bearerAuth=(req.headers.get("Authorization")||"").startsWith("Bearer ");if(origin&&origin!==url.origin)return json({error:"Origin denied."},403,"");if(!origin&&!bearerAuth)return json({error:"Origin denied."},403,"");let b=await readJsonLimited(req,1024);if(b.error)return json({error:b.error},b.status,"");let id=b.data?.lead_id||"";if(!/^[0-9a-f-]{36}$/i.test(id))return json({error:"Invalid lead ID."},400,"");let d=await env.DB.prepare("DELETE FROM leads WHERE id=?").bind(id).run();if(d.meta?.changes===1)await env.DB.prepare("INSERT INTO security_audit_log (created_at,action) VALUES (?, 'admin-lead-deleted')").bind(new Date().toISOString()).run();return json({success:true,deleted:d.meta?.changes===1},200,"")}return json({error:"Not found"},404,"")}
+async function adminRoute(req,env,url){if(!env.ADMIN_API_TOKEN)return json({error:"Admin is not configured."},503,"");let p=url.pathname;if(p==="/admin"||p==="/admin/")return new Response(ADMIN_HTML,{headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store","X-Frame-Options":"DENY","X-Content-Type-Options":"nosniff","Content-Security-Policy":"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"}});if(req.method==="POST"&&p==="/admin/login"){if(req.headers.get("Origin")!==url.origin)return json({error:"Origin denied."},403,"");let b=await readJsonLimited(req,2048);if(b.error)return json({error:b.error},b.status,"");if(b.data?.token!==env.ADMIN_API_TOKEN)return json({error:"Invalid admin token."},401,"");let v=await adminSign({exp:Date.now()/1000+28800},env.ADMIN_API_TOKEN);return new Response('{"success":true}',{headers:{"Content-Type":"application/json","Cache-Control":"no-store","Set-Cookie":adminCookie(v,28800)}})}if(req.method==="POST"&&p==="/admin/logout"){if(req.headers.get("Origin")!==url.origin)return json({error:"Origin denied."},403,"");return new Response('{"success":true}',{headers:{"Content-Type":"application/json","Set-Cookie":adminCookie("",0)}})}const auth=req.headers.get("Authorization")||"";const bearerOk=p==="/admin/delete-lead"&&auth.startsWith("Bearer ")&&auth.slice(7)===env.ADMIN_API_TOKEN;const sessionOk=await adminValid(req,env.ADMIN_API_TOKEN);if(!sessionOk&&!bearerOk)return json({error:"Unauthorized."},401,"");if(req.method==="GET"&&p==="/admin/session")return json({authenticated:true},200,"");if(req.method==="GET"&&p==="/admin/leads"){let q=(url.searchParams.get("q")||"").slice(0,100),period=url.searchParams.get("period"),w=[],v=[];if(q){w.push("(name LIKE ? OR email LIKE ? OR phone LIKE ? OR summary LIKE ?)");v.push("%"+q+"%","%"+q+"%","%"+q+"%","%"+q+"%")}if(period==="today")w.push("date(created_at)=date('now')");if(period==="7"||period==="30"){w.push("created_at>=?");v.push(new Date(Date.now()-Number(period)*86400000).toISOString())}let clause=w.length?" WHERE "+w.join(" AND "):"",rows=await env.DB.prepare("SELECT id,created_at,name,email,phone,service,summary,source,status,lead_score,lead_priority FROM leads"+clause+" ORDER BY created_at DESC LIMIT 500").bind(...v).all(),total=await env.DB.prepare("SELECT COUNT(*) n FROM leads").first(),today=await env.DB.prepare("SELECT COUNT(*) n FROM leads WHERE date(created_at)=date('now')").first(),services=await env.DB.prepare("SELECT COUNT(DISTINCT service) n FROM leads").first();return json({leads:rows.results||[],total:total?.n||0,today:today?.n||0,service_count:services?.n||0},200,"")}if(req.method==="GET"&&p==="/admin/audit"){let a=await env.DB.prepare("SELECT created_at,action FROM security_audit_log ORDER BY created_at DESC LIMIT 20").all();return json({events:a.results||[]},200,"")}if(req.method==="POST"&&p==="/admin/delete-lead"){const origin=req.headers.get("Origin");const bearerAuth=(req.headers.get("Authorization")||"").startsWith("Bearer ");if(origin&&origin!==url.origin)return json({error:"Origin denied."},403,"");if(!origin&&!bearerAuth)return json({error:"Origin denied."},403,"");let b=await readJsonLimited(req,1024);if(b.error)return json({error:b.error},b.status,"");let id=b.data?.lead_id||"";if(!/^[0-9a-f-]{36}$/i.test(id))return json({error:"Invalid lead ID."},400,"");let d=await env.DB.prepare("DELETE FROM leads WHERE id=?").bind(id).run();if(d.meta?.changes===1)await env.DB.prepare("INSERT INTO security_audit_log (created_at,action) VALUES (?, 'admin-lead-deleted')").bind(new Date().toISOString()).run();return json({success:true,deleted:d.meta?.changes===1},200,"")}return json({error:"Not found"},404,"")}
 
 
 export default {
@@ -292,21 +327,28 @@ export default {
 
     if (body.consent_token) {
       const lastMessage = body.messages.filter(m => m.role === "user").at(-1)?.content.trim().toLowerCase() || "";
-      const affirmative = /^(yes|yes please|yes[, ]+i agree|i agree|i consent|okay|ok|sure|that's fine|go ahead|you may share)[.! ]*$/i.test(lastMessage);
-      const negative = /^(no|no thanks|i do not consent|don't share)[.! ]*$/i.test(lastMessage);
-      if (!affirmative && !negative) return json({ reply: "Please reply Yes to agree to share your enquiry with NISCO, or No to decline." }, 200, allowed);
+      const affirmative = /^(yes|yes please|yes[, ]+i agree|i agree|i consent|okay|ok|sure|that's fine|go ahead|you may share|نعم|أوافق|موافق|موافقة|أجل|بالتأكيد)[.!، ]*$/i.test(lastMessage);
+      const negative = /^(no|no thanks|i do not consent|don't share|لا|لا أوافق|غير موافق|كلا)[.!، ]*$/i.test(lastMessage);
+      if (!affirmative && !negative) {
+        const consentReminder = /[؀-ۿ]/.test(lastMessage)
+          ? "يرجى الرد بنعم للموافقة على مشاركة استفسارك مع NISCO، أو لا للرفض."
+          : "Please reply Yes to agree to share your enquiry with NISCO, or No to decline.";
+        return json({ reply: consentReminder }, 200, allowed);
+      }
       const challenge = await env.DB.prepare("SELECT * FROM lead_consent_challenges WHERE id = ?").bind(String(body.consent_token).slice(0, 64)).first();
       if (!challenge || challenge.used_at || Date.parse(challenge.expires_at) <= Date.now()) return json({ reply: "This consent request has expired. Please start a new enquiry if you would like the NISCO team to contact you." }, 200, allowed);
       if (negative) {
         await env.DB.prepare("UPDATE lead_consent_challenges SET used_at = ? WHERE id = ? AND used_at IS NULL").bind(new Date().toISOString(), challenge.id).run();
-        return json({ reply: "No problem. I haven't saved or shared your details." }, 200, allowed);
+        const declinedReply = /[؀-ۿ]/.test(lastMessage) ? "لا مشكلة. لم أحفظ بياناتك أو أشاركها." : "No problem. I haven't saved or shared your details.";
+        return json({ reply: declinedReply }, 200, allowed);
       }
       const consumed = await env.DB.prepare("UPDATE lead_consent_challenges SET used_at = ? WHERE id = ? AND used_at IS NULL AND expires_at > ?").bind(new Date().toISOString(), challenge.id, new Date().toISOString()).run();
       if (consumed.meta?.changes !== 1) return json({ reply: "This consent request has already been used or has expired. Please start a new enquiry." }, 200, allowed);
       try {
         const saved = await captureLead({ email: challenge.email, phone: challenge.phone, preferred_contact: challenge.email ? "email" : "phone", service: challenge.service, summary: challenge.summary, consent: true }, env);
         if (!saved?.ok) return json({ reply: "I couldn't save the enquiry just now. Your details haven't been submitted. Please try again shortly." }, 200, allowed);
-        return json({ reply: "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided.", lead_saved: true }, 200, allowed);
+        const savedReply = /[؀-ۿ]/.test(lastMessage) ? "شكراً لك. تم تسجيل استفسارك بنجاح لفريق NISCO. يمكن للفريق مراجعة متطلباتك والتواصل معك باستخدام بيانات الاتصال التي قدمتها." : "Thank you. Your enquiry has been recorded successfully for the NISCO team. They can review your requirements and contact you using the details you provided.";
+        return json({ reply: savedReply, lead_saved: true }, 200, allowed);
       } catch (error) { console.error("NISCO lead capture failed", error); return json({ reply: "I couldn't save the enquiry just now. Your details haven't been submitted. Please try again shortly." }, 200, allowed); }
     }
 
@@ -315,16 +357,31 @@ export default {
     const lastUserMessage = userMessages[userMessages.length - 1]?.content || "";
     const lower = lastUserMessage.trim().toLowerCase();
 
-    const starter = userMessages.find(m => /please guide me through (?:a|an) (website|digital marketing|business transformation|business automation|ai chatbot|website maintenance|automation support) enquiry/i.test(m.content));
+    const starter = userMessages.find(m => /please guide me through (?:a|an) (website|digital marketing|business transformation|business automation|ai chatbot|website maintenance|automation support) enquiry/i.test(m.content) || /أرشدني.*(?:استفسار|طلب).*(?:موقع|تسويق|تحول|أتمتة|روبوت|صيانة)/i.test(m.content));
     if (starter) {
-      const flow = GUIDED_FLOWS.find(item => item.pattern.test(starter.content));
-      if (!flow) return json({ reply: "Please tell me which NISCO service you would like to discuss: website, automation, AI chatbot, digital marketing or ongoing support." }, 200, allowed);
+      const arabicFlow = /[؀-ۿ]/.test(starter.content);
+      const flow = GUIDED_FLOWS.find(item => item.pattern.test(starter.content) || (arabicFlow && (
+        (item.service === "Business website" && /موقع|ويب/.test(starter.content)) ||
+        (item.service === "Digital Marketing" && /تسويق/.test(starter.content)) ||
+        (item.service === "Business automation" && /أتمتة|تحول/.test(starter.content)) ||
+        (item.service === "AI chatbot" && /روبوت|شات بوت/.test(starter.content)) ||
+        (item.service === "Website maintenance" && /صيانة/.test(starter.content)) ||
+        (item.service === "Automation support" && /دعم الأتمتة/.test(starter.content))
+      )));
+      if (!flow) return json({ reply: arabicFlow ? "يرجى اختيار خدمة من خدمات NISCO: المواقع الإلكترونية أو الأتمتة أو روبوتات المحادثة أو التسويق الرقمي أو الدعم المستمر." : "Please tell me which NISCO service you would like to discuss: website, automation, AI chatbot, digital marketing or ongoing support." }, 200, allowed);
 
       const service = flow.service;
-      const firstQuestion = flow.firstQuestion;
+      const firstQuestion = arabicFlow ? ({
+        "Website maintenance":"بالتأكيد. هل موقعك الإلكتروني منشور حالياً؟ وما المنصة المستخدمة وما نوع الصيانة أو الدعم المطلوب؟",
+        "Automation support":"ما حل الأتمتة أو التقارير الذي تستخدمه حالياً، وما الذي ترغب في أن يقوم فريق NISCO بصيانته أو تحسينه؟",
+        "AI chatbot":"ما المهام التي تريد من روبوت المحادثة تنفيذها، مثل الإجابة عن الأسئلة الشائعة أو تأهيل الاستفسارات أو جمع طلبات التواصل؟",
+        "Business automation":"ما العملية التجارية التي ترغب في تحسينها أو أتمتتها، مثل استفسارات العملاء أو التقارير أو الموافقات أو الحجوزات؟",
+        "Digital Marketing":"ما طبيعة نشاطك التجاري، وما الهدف الأهم بالنسبة لك: زيادة الوعي بالعلامة التجارية أم الاستفسارات أم المبيعات أم الظهور عبر الإنترنت؟",
+        "Business website":"ما نوع الموقع الذي تحتاج إليه، مثل موقع شركة أو متجر إلكتروني أو معرض أعمال؟"
+      })[service] : flow.firstQuestion;
       const askedFirst = assistantMessages.some(m => m.content === firstQuestion);
-      const contactPrompt = "To prepare your enquiry, please share the email address or phone number the NISCO team should use to contact you.";
-      const consentPrompt = "Before I save this enquiry: your contact details and requirement summary will be stored in NISCO's enquiry database for the team to review and follow up. No automatic WhatsApp or email will be sent. Do you agree to share and save these details?";
+      const contactPrompt = arabicFlow ? "لإعداد طلبك، يرجى مشاركة البريد الإلكتروني أو رقم الهاتف الذي يمكن لفريق NISCO التواصل معك من خلاله." : "To prepare your enquiry, please share the email address or phone number the NISCO team should use to contact you.";
+      const consentPrompt = arabicFlow ? "قبل حفظ هذا الاستفسار: سيتم تخزين بيانات الاتصال وملخص المتطلبات في قاعدة بيانات استفسارات NISCO ليتمكن الفريق من مراجعتها والمتابعة معك، وقد يتلقى الفريق إشعاراً عبر البريد الإلكتروني عند تفعيل الخدمة. هل توافق على مشاركة هذه البيانات وحفظها؟" : "Before I save this enquiry: your contact details and requirement summary will be stored in NISCO's enquiry database for the team to review and follow up. Do you agree to share and save these details?";
       const askedContact = assistantMessages.some(m => m.content === contactPrompt);
       const askedConsent = assistantMessages.some(m => m.content === consentPrompt);
 
@@ -341,7 +398,7 @@ export default {
       const summary = requirementMessages.join(" | ").slice(0, 2000);
 
       if (!askedContact) return json({ reply: contactPrompt }, 200, allowed);
-      if (!email && !phone) return json({ reply: "I couldn't identify an email address or phone number in that message. Please enter the contact email or phone number you'd like the NISCO team to use." }, 200, allowed);
+      if (!email && !phone) return json({ reply: arabicFlow ? "لم أتمكن من تحديد بريد إلكتروني أو رقم هاتف. يرجى إدخال وسيلة التواصل التي تريد أن يستخدمها فريق NISCO." : "I couldn't identify an email address or phone number in that message. Please enter the contact email or phone number you'd like the NISCO team to use." }, 200, allowed);
       if (!askedConsent) {
         const token = crypto.randomUUID();
         const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
@@ -353,6 +410,9 @@ export default {
 
     const businessInfoReply = getBusinessInfoReply(lastUserMessage);
     if (businessInfoReply) return json({ reply: businessInfoReply }, 200, allowed);
+
+    const knowledge = lookupNiscoKnowledge(lastUserMessage);
+    if (knowledge) return json({ reply: knowledge.answer, knowledge_source: knowledge.source, knowledge_version: knowledge.version }, 200, allowed);
 
     try {
       const data = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {

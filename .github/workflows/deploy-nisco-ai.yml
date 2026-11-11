@@ -23,6 +23,9 @@ jobs:
         run: npm test
 
   deploy:
+    # Production deployment is restricted to the protected main branch.
+    # Feature branches may run tests but cannot deploy or apply remote D1 migrations.
+    if: github.ref == 'refs/heads/main'
     needs: test
     runs-on: ubuntu-latest
     env:

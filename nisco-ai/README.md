@@ -4,6 +4,7 @@ NISCO AI is the guided business assistant embedded in the NISCO static website. 
 
 ## Current capabilities
 
+- Supports English and Modern Standard Arabic responses; Arabic messages are rendered right-to-left in the website chat widget.
 - Explains NISCO's services: digital solutions, AI and automation, consulting, cloud and integration, digital marketing, and selected business services.
 - Gives approved India starting prices only:
   - Business website: ₹15,000 onwards
@@ -13,14 +14,14 @@ NISCO AI is the guided business assistant embedded in the NISCO static website. 
   - Automation support: ₹3,000/month onwards
 - Answers public location and contact questions: Chennai, India; nisco.in@outlook.com.
 - Provides guided qualification for website, automation, AI chatbot, digital marketing, website maintenance and automation support.
-- Stores chat enquiries in Cloudflare D1 only after a contact method is supplied and the visitor explicitly consents.
-- Does not automatically send WhatsApp or email notifications for chatbot-captured leads.
+- Stores chat enquiries in Cloudflare D1 only after a contact method is supplied and the visitor explicitly consents. English and Arabic consent replies are recognised.
+- After explicit consent and successful D1 storage, sends a chatbot enquiry notification to nisco.in@outlook.com through Brevo when the required Brevo secrets are configured. If notification delivery fails, the saved enquiry remains recorded and the admin dashboard remains the source of truth.
 
 Prices are indicative starting prices, not fixed quotations. Scope, integrations, licences, hosting, taxes and third-party costs must be confirmed in writing.
 
 ## Architecture
 
-Website chat widget (assets/nisco-chat.js) → Cloudflare Worker (src/index.js) → Cloudflare Workers AI → Cloudflare D1 (leads and consent challenges).
+Website chat widget (assets/nisco-chat.js) → Cloudflare Worker (src/index.js) → curated bilingual knowledge centre and Cloudflare Workers AI → Cloudflare D1 (leads, consent challenges, status and lead priority).
 
 The Worker uses the Workers AI binding with @cf/meta/llama-3.3-70b-instruct-fp8-fast. It does not require an OpenAI API key.
 
@@ -72,7 +73,7 @@ Tests use mocked Workers AI and D1 bindings; they do not contact production serv
 - The visitor is told when an enquiry is successfully saved; failed writes must never be described as successful.
 - Website form enquiries require explicit consent and a valid email. Optional phone details are included in the notification and stored in D1.
 - Website form notifications are sent to nisco.in@outlook.com through Brevo after sender verification and API-key configuration.
-- Chatbot lead capture remains stored in D1 without automatic email or WhatsApp notification.
+- Chatbot lead capture sends an email notification through Brevo when configured; no WhatsApp notification is sent. The notification is attempted only after explicit consent and successful database storage.
 - Before collecting real visitor data, publish and maintain a privacy notice covering purpose, access, retention/deletion and contact rights. Restrict D1 access to authorised operators.
 
 ## Release verification
@@ -86,3 +87,13 @@ After a successful GitHub Actions deployment:
 5. Submit a controlled website form test with and without optional phone details.
 6. Confirm the notification reaches the NISCO mailbox and the D1 record includes the submitted contact details.
 7. Confirm the chatbot does not claim that an email or WhatsApp notification was sent.
+
+## Knowledge, lead triage and notification behaviour
+
+- The curated knowledge centre in `src/knowledge.js` supports English and Modern Standard Arabic. Update it only with verified NISCO-approved facts and prices.
+- Knowledge answers include a source key and knowledge version in the API response for internal traceability.
+- Unmatched questions are answered by Workers AI under the system prompt's anti-fabrication rules.
+- Lead priority is calculated deterministically (0–100) and stored as `lead_score` plus `lead_priority` (`standard` or `high`). It is only an operational triage aid.
+- Chat lead notifications use the existing Brevo integration. Configure `BREVO_API_KEY` and a verified `BREVO_SENDER_EMAIL` Worker secret/variable. A notification failure does not remove a lead already stored in D1.
+- D1 migration `0005_add_lead_scoring.sql` adds the scoring fields. Apply it through the reviewed production migration workflow after the release is approved.
+- Do not put customer records or API credentials in GitHub, frontend code or test fixtures.
