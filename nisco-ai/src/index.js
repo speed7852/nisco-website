@@ -357,16 +357,31 @@ export default {
     const lastUserMessage = userMessages[userMessages.length - 1]?.content || "";
     const lower = lastUserMessage.trim().toLowerCase();
 
-    const starter = userMessages.find(m => /please guide me through (?:a|an) (website|digital marketing|business transformation|business automation|ai chatbot|website maintenance|automation support) enquiry/i.test(m.content));
+    const starter = userMessages.find(m => /please guide me through (?:a|an) (website|digital marketing|business transformation|business automation|ai chatbot|website maintenance|automation support) enquiry/i.test(m.content) || /أرشدني.*(?:استفسار|طلب).*(?:موقع|تسويق|تحول|أتمتة|روبوت|صيانة)/i.test(m.content));
     if (starter) {
-      const flow = GUIDED_FLOWS.find(item => item.pattern.test(starter.content));
-      if (!flow) return json({ reply: "Please tell me which NISCO service you would like to discuss: website, automation, AI chatbot, digital marketing or ongoing support." }, 200, allowed);
+      const arabicFlow = /[؀-ۿ]/.test(starter.content);
+      const flow = GUIDED_FLOWS.find(item => item.pattern.test(starter.content) || (arabicFlow && (
+        (item.service === "Business website" && /موقع|ويب/.test(starter.content)) ||
+        (item.service === "Digital Marketing" && /تسويق/.test(starter.content)) ||
+        (item.service === "Business automation" && /أتمتة|تحول/.test(starter.content)) ||
+        (item.service === "AI chatbot" && /روبوت|شات بوت/.test(starter.content)) ||
+        (item.service === "Website maintenance" && /صيانة/.test(starter.content)) ||
+        (item.service === "Automation support" && /دعم الأتمتة/.test(starter.content))
+      )));
+      if (!flow) return json({ reply: arabicFlow ? "يرجى اختيار خدمة من خدمات NISCO: المواقع الإلكترونية أو الأتمتة أو روبوتات المحادثة أو التسويق الرقمي أو الدعم المستمر." : "Please tell me which NISCO service you would like to discuss: website, automation, AI chatbot, digital marketing or ongoing support." }, 200, allowed);
 
       const service = flow.service;
-      const firstQuestion = flow.firstQuestion;
+      const firstQuestion = arabicFlow ? ({
+        "Website maintenance":"بالتأكيد. هل موقعك الإلكتروني منشور حالياً؟ وما المنصة المستخدمة وما نوع الصيانة أو الدعم المطلوب؟",
+        "Automation support":"ما حل الأتمتة أو التقارير الذي تستخدمه حالياً، وما الذي ترغب في أن يقوم فريق NISCO بصيانته أو تحسينه؟",
+        "AI chatbot":"ما المهام التي تريد من روبوت المحادثة تنفيذها، مثل الإجابة عن الأسئلة الشائعة أو تأهيل الاستفسارات أو جمع طلبات التواصل؟",
+        "Business automation":"ما العملية التجارية التي ترغب في تحسينها أو أتمتتها، مثل استفسارات العملاء أو التقارير أو الموافقات أو الحجوزات؟",
+        "Digital Marketing":"ما طبيعة نشاطك التجاري، وما الهدف الأهم بالنسبة لك: زيادة الوعي بالعلامة التجارية أم الاستفسارات أم المبيعات أم الظهور عبر الإنترنت؟",
+        "Business website":"ما نوع الموقع الذي تحتاج إليه، مثل موقع شركة أو متجر إلكتروني أو معرض أعمال؟"
+      })[service] : flow.firstQuestion;
       const askedFirst = assistantMessages.some(m => m.content === firstQuestion);
-      const contactPrompt = "To prepare your enquiry, please share the email address or phone number the NISCO team should use to contact you.";
-      const consentPrompt = "Before I save this enquiry: your contact details and requirement summary will be stored in NISCO's enquiry database for the team to review and follow up. No automatic WhatsApp or email will be sent. Do you agree to share and save these details?";
+      const contactPrompt = arabicFlow ? "لإعداد طلبك، يرجى مشاركة البريد الإلكتروني أو رقم الهاتف الذي يمكن لفريق NISCO التواصل معك من خلاله." : "To prepare your enquiry, please share the email address or phone number the NISCO team should use to contact you.";
+      const consentPrompt = arabicFlow ? "قبل حفظ هذا الاستفسار: سيتم تخزين بيانات الاتصال وملخص المتطلبات في قاعدة بيانات استفسارات NISCO ليتمكن الفريق من مراجعتها والمتابعة معك. هل توافق على مشاركة هذه البيانات وحفظها؟" : "Before I save this enquiry: your contact details and requirement summary will be stored in NISCO's enquiry database for the team to review and follow up. Do you agree to share and save these details?";
       const askedContact = assistantMessages.some(m => m.content === contactPrompt);
       const askedConsent = assistantMessages.some(m => m.content === consentPrompt);
 
@@ -383,7 +398,7 @@ export default {
       const summary = requirementMessages.join(" | ").slice(0, 2000);
 
       if (!askedContact) return json({ reply: contactPrompt }, 200, allowed);
-      if (!email && !phone) return json({ reply: "I couldn't identify an email address or phone number in that message. Please enter the contact email or phone number you'd like the NISCO team to use." }, 200, allowed);
+      if (!email && !phone) return json({ reply: arabicFlow ? "لم أتمكن من تحديد بريد إلكتروني أو رقم هاتف. يرجى إدخال وسيلة التواصل التي تريد أن يستخدمها فريق NISCO." : "I couldn't identify an email address or phone number in that message. Please enter the contact email or phone number you'd like the NISCO team to use." }, 200, allowed);
       if (!askedConsent) {
         const token = crypto.randomUUID();
         const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
