@@ -144,16 +144,30 @@ nisco-website/
 ├── script.js
 ├── privacy-policy.html
 ├── _headers
+├── robots.txt
+├── sitemap.xml
+├── privacy-policy.html
+├── lighthouserc.js
+├── playwright.config.js
+├── DESIGN-SYSTEM.md
+├── QUALITY-TOOLKIT.md
 ├── assets/
 │   ├── nisco-logo.svg
-│   ├── nisco-hero.jpg
+│   ├── nisco-hero.jpg (legacy, unused)
 │   ├── nisco-chat.js
 │   └── nisco-india-config.js
+├── scripts/
+│   └── check-design-system.mjs
 ├── tests/
+│   ├── accessibility.spec.js
+│   ├── mobile-layout.spec.js
 │   └── site.test.js
 ├── .github/workflows/
 │   ├── deploy-nisco-ai.yml
-│   └── site-check.yml
+│   ├── design-system.yml
+│   ├── lighthouse.yml
+│   ├── test-nisco-site.yml
+│   └── visual-qa.yml
 └── nisco-ai/
     ├── src/
     ├── migrations/
