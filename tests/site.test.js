@@ -107,5 +107,5 @@ test("approved premium hero uses Riyadh skyline photography, not the legacy summ
   assert.ok(!css.includes('background-image:url("assets/nisco-hero.jpg")'));
   assert.match(html, /Riyadh skyline representing NISCO/);
   assert.doesNotMatch(html, /flag-caption|flags over a Riyadh skyline/);
-  assert.doesNotMatch(css, /\\.why-image:before|\\.why-image:after/);
+  assert.doesNotMatch(css, /\.why-image:before|\.why-image:after/);
 });
