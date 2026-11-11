@@ -27,16 +27,12 @@
   transform: translate3d(0, 18px, 0);
   transition: opacity .55s ease, transform .55s cubic-bezier(.2,.7,.2,1);
 }
-.js-motion-enabled .reveal[data-reveal="left"] { transform: translate3d(-22px, 0, 0); }
-.js-motion-enabled .reveal[data-reveal="right"] { transform: translate3d(22px, 0, 0); }
 .js-motion-enabled .reveal.is-visible {
   opacity: 1;
   transform: translate3d(0, 0, 0);
 }
 @media(prefers-reduced-motion:reduce) {
-  .js-motion-enabled .reveal,
-  .js-motion-enabled .reveal[data-reveal="left"],
-  .js-motion-enabled .reveal[data-reveal="right"] {
+  .js-motion-enabled .reveal {
     opacity: 1;
     transform: none;
     transition: none;
