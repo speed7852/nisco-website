@@ -33,6 +33,10 @@
     const node = document.createElement("div");
     node.className = "nisco-chat-message " + role + (extraClass ? " " + extraClass : "");
     node.textContent = text;
+    const isArabic = /[؀-ۿ]/.test(text);
+    node.dir = isArabic ? "rtl" : "ltr";
+    node.lang = isArabic ? "ar" : "en";
+    node.style.textAlign = isArabic ? "right" : "left";
     messagesEl.appendChild(node);
     messagesEl.scrollTop = messagesEl.scrollHeight;
     return node;
