@@ -222,13 +222,14 @@ export default {
       if (typeof enquiry.website === "string" && enquiry.website.trim()) return json({ success: true }, 200, allowed);
       const name = typeof enquiry.name === "string" ? enquiry.name.trim() : "";
       const customerEmail = typeof enquiry.email === "string" ? enquiry.email.trim() : "";
+      const phone = typeof enquiry.phone === "string" ? enquiry.phone.trim() : "";
       const business = typeof enquiry.business === "string" ? enquiry.business.trim() : "";
       const service = typeof enquiry.service === "string" ? enquiry.service.trim() : "";
       const budget = typeof enquiry.budget === "string" ? enquiry.budget.trim() : "";
       const requirement = typeof enquiry.requirement === "string" ? enquiry.requirement.trim() : "";
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!name || name.length > 100 || !emailPattern.test(customerEmail) || customerEmail.length > 254 ||
-          business.length > 120 || !service || service.length > 120 || budget.length > 80 ||
+          phone.length > 30 || business.length > 120 || !service || service.length > 120 || budget.length > 80 ||
           !requirement || requirement.length > 1200 || enquiry.consent !== true) {
         return json({ error: "Please complete the required fields and agree to share your enquiry." }, 400, allowed);
       }
@@ -237,6 +238,7 @@ export default {
         "",
         "Name: " + name,
         "Customer email: " + customerEmail,
+        "Phone: " + (phone || "Not provided"),
         "Business: " + (business || "Not provided"),
         "Service: " + service,
         "Budget: " + (budget || "Not provided"),
@@ -268,9 +270,9 @@ export default {
         }
         const messageId = (await mailResponse.json()).messageId || "";
         await env.DB.prepare(
-          "INSERT INTO leads (id, created_at, name, email, phone, preferred_contact, service, summary, timeline, consent, source) VALUES (?, ?, ?, ?, '', 'email', ?, ?, '', 1, 'website-form')"
+          "INSERT INTO leads (id, created_at, name, email, phone, preferred_contact, service, summary, timeline, consent, source) VALUES (?, ?, ?, ?, ?, 'email', ?, ?, '', 1, 'website-form')"
         ).bind(
-          crypto.randomUUID(), new Date().toISOString(), name, customerEmail,
+          crypto.randomUUID(), new Date().toISOString(), name, customerEmail, phone,
           service, ("Business: " + business + " | Budget: " + budget + " | " + requirement).slice(0, 2000)
         ).run();
         return json({ success: true, message_id: messageId }, 200, allowed);
