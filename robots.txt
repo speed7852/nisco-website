@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://nisco-website.pages.dev/sitemap.xml
