@@ -327,8 +327,8 @@ export default {
 
     if (body.consent_token) {
       const lastMessage = body.messages.filter(m => m.role === "user").at(-1)?.content.trim().toLowerCase() || "";
-      const affirmative = /^(yes|yes please|yes[, ]+i agree|i agree|i consent|okay|ok|sure|that's fine|go ahead|you may share|نعم|أوافق|موافق|موافقة)[.!، ]*$/i.test(lastMessage);
-      const negative = /^(no|no thanks|i do not consent|don't share|لا|لا أوافق|غير موافق)[.!، ]*$/i.test(lastMessage);
+      const affirmative = /^(yes|yes please|yes[, ]+i agree|i agree|i consent|okay|ok|sure|that's fine|go ahead|you may share|نعم|أوافق|موافق|موافقة|أجل|بالتأكيد)[.!، ]*$/i.test(lastMessage);
+      const negative = /^(no|no thanks|i do not consent|don't share|لا|لا أوافق|غير موافق|كلا)[.!، ]*$/i.test(lastMessage);
       if (!affirmative && !negative) {
         const consentReminder = /[؀-ۿ]/.test(lastMessage)
           ? "يرجى الرد بنعم للموافقة على مشاركة استفسارك مع NISCO، أو لا للرفض."
@@ -381,7 +381,7 @@ export default {
       })[service] : flow.firstQuestion;
       const askedFirst = assistantMessages.some(m => m.content === firstQuestion);
       const contactPrompt = arabicFlow ? "لإعداد طلبك، يرجى مشاركة البريد الإلكتروني أو رقم الهاتف الذي يمكن لفريق NISCO التواصل معك من خلاله." : "To prepare your enquiry, please share the email address or phone number the NISCO team should use to contact you.";
-      const consentPrompt = arabicFlow ? "قبل حفظ هذا الاستفسار: سيتم تخزين بيانات الاتصال وملخص المتطلبات في قاعدة بيانات استفسارات NISCO ليتمكن الفريق من مراجعتها والمتابعة معك. هل توافق على مشاركة هذه البيانات وحفظها؟" : "Before I save this enquiry: your contact details and requirement summary will be stored in NISCO's enquiry database for the team to review and follow up. Do you agree to share and save these details?";
+      const consentPrompt = arabicFlow ? "قبل حفظ هذا الاستفسار: سيتم تخزين بيانات الاتصال وملخص المتطلبات في قاعدة بيانات استفسارات NISCO ليتمكن الفريق من مراجعتها والمتابعة معك، وقد يتلقى الفريق إشعاراً عبر البريد الإلكتروني عند تفعيل الخدمة. هل توافق على مشاركة هذه البيانات وحفظها؟" : "Before I save this enquiry: your contact details and requirement summary will be stored in NISCO's enquiry database for the team to review and follow up. Do you agree to share and save these details?";
       const askedContact = assistantMessages.some(m => m.content === contactPrompt);
       const askedConsent = assistantMessages.some(m => m.content === consentPrompt);
 
