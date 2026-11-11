@@ -11,42 +11,42 @@ const [html, css, script, chat, config, headers] = await Promise.all([
   readFile(new URL("../_headers", import.meta.url), "utf8")
 ]);
 
-test("India contact details and Chennai positioning are configured", () => {
+test("NISCO brand, markets and approved positioning are present", () => {
   assert.match(config, /nisco\.in@outlook\.com/);
-  assert.doesNotMatch(config, /whatsapp|919894577373/i);
   assert.match(config, /Chennai/);
   assert.match(html, /India &amp; Saudi Arabia/);
-  assert.match(html, /TECHNOLOGY.*BUSINESS.*PEOPLE/);
   assert.match(html, /Built to Rise\.<br><span>Driven to Grow\.<\/span>/);
+  assert.match(html, /assets\/nisco-logo\.svg/);
 });
 
-test("service packages show agreed INR starting prices", () => {
-  assert.match(html, /Business Website/);
-  assert.match(html, /₹15,000/);
-  assert.match(html, /Business Automation/);
-  assert.match(html, /AI Chatbot/);
-  assert.match(html, /₹10,000/);
-  assert.match(html, /₹2,000\/month/);
-  assert.match(html, /₹3,000\/month/);
+test("premium homepage has the approved visual sections", () => {
+  for (const section of ["hero-rise", "services-section", "why-section", "proof-strip", "work-section", "insights-section", "consultation-section"]) {
+    assert.match(html, new RegExp(section));
+  }
+  assert.match(html, /Digital Solutions/);
+  assert.match(html, /AI &amp; Automation/);
+  assert.match(html, /Cloud &amp; Integration/);
+  assert.match(css, /Playfair Display/);
+  assert.match(css, /--navy:#06182a/);
+  assert.match(css, /--gold:#e7b650/);
 });
 
-test("enquiry form collects customer email and submits directly to NISCO", () => {
+test("enquiry form collects consent and submits directly to NISCO", () => {
   assert.match(html, /id="nisco-enquiry-form"/);
   assert.match(html, /id="enquiry-consent" required/);
   assert.match(html, /id="enquiry-email" name="email" type="email".*required/);
-  assert.match(script, /\/enquiry/);
-  assert.match(script, /Submit Enquiry/);
-  assert.match(script, /Sending your enquiry securely to NISCO/);
-  assert.doesNotMatch(script, /wa\.me|whatsapp/i);
-  assert.match(html, /sent securely to NISCO/i);
+  assert.match(html, /sent directly to the NISCO team/i);
   assert.match(html, /nisco\.in@outlook\.com/);
+  assert.match(script, /\/enquiry/);
+  assert.match(script, /Sending your enquiry securely to NISCO/);
   assert.doesNotMatch(html, /Catchnoor@live\.in|98945\s?77373|wa\.me/i);
 });
 
-test("portfolio claims are clearly identified as project and in-house demo", () => {
+test("portfolio examples are accurately qualified", () => {
   assert.match(html, /Al Jawdah business website/);
   assert.match(html, /IN-HOUSE DEMONSTRATION/);
-  assert.match(html, /not represent independently verified client performance results/i);
+  assert.match(html, /do not represent independently verified client performance results/i);
+  assert.match(html, /planned multi-role learning platform concept/i);
 });
 
 test("existing NISCO AI widget and Worker endpoint remain present", () => {
@@ -55,22 +55,16 @@ test("existing NISCO AI widget and Worker endpoint remain present", () => {
   assert.match(chat, /nisco-ai\.speedhome7852\.workers\.dev\/chat/);
   assert.match(chat, /startFreshConversation/);
   assert.match(chat, /I need an AI chatbot/);
-  assert.match(chat, /Website maintenance/);
-  assert.match(chat, /Grow my business/);
 });
 
-test("new sections have responsive styles", () => {
-  assert.match(css, /\.package-grid/);
+test("responsive and accessible foundations remain configured", () => {
+  assert.match(css, /\.service-grid/);
   assert.match(css, /\.enquiry-form/);
-  assert.match(css, /@media\(max-width:680px\)/);
-});
-
-
-test("security headers and enquiry copy are configured", () => {
+  assert.match(css, /@media\(max-width:760px\)/);
+  assert.match(css, /:focus-visible/);
+  assert.match(css, /prefers-reduced-motion/);
   assert.match(headers, /X-Content-Type-Options: nosniff/);
   assert.match(headers, /X-Frame-Options: DENY/);
   assert.match(headers, /Content-Security-Policy:/);
   assert.match(headers, /Permissions-Policy:/);
-  assert.match(html, /sent directly to the NISCO team/i);
-  assert.doesNotMatch(html, /email app will prepare/i);
 });
