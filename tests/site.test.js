@@ -53,6 +53,9 @@ test("portfolio examples are accurately qualified", () => {
 test("existing NISCO AI widget and Worker endpoint remain present", () => {
   assert.match(html, /id="nisco-chat-panel"/);
   assert.match(html, /assets\/nisco-chat\.js/);
+  assert.match(css, /\.nisco-chat\{position:fixed;right:24px;bottom:22px/);
+  assert.match(css, /\.nisco-chat-panel\[hidden\]\{display:none!important\}/);
+  assert.match(css, /@media\(max-width:760px\)\{\.nisco-chat/);
   assert.match(chat, /nisco-ai\.speedhome7852\.workers\.dev\/chat/);
   assert.match(chat, /startFreshConversation/);
   assert.match(chat, /I need an AI chatbot/);
@@ -102,5 +105,7 @@ test("approved premium hero uses Riyadh skyline photography, not the legacy summ
   assert.match(html, /Riyadh skyline at night featuring Kingdom Centre Tower/);
   assert.ok(css.includes("images.unsplash.com/photo-1663900108404-a05e8bf82cda"));
   assert.ok(!css.includes('background-image:url("assets/nisco-hero.jpg")'));
-  assert.match(html, /India and Saudi Arabia flags over a Riyadh skyline/);
+  assert.match(html, /Riyadh skyline representing NISCO/);
+  assert.doesNotMatch(html, /flag-caption|flags over a Riyadh skyline/);
+  assert.doesNotMatch(css, /\\.why-image:before|\\.why-image:after/);
 });
