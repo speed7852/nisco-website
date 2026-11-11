@@ -100,7 +100,7 @@ test("consultation button restores its original label after sending", () => {
 
 test("approved premium hero uses Riyadh skyline photography, not the legacy summit image", () => {
   assert.match(html, /Riyadh skyline at night featuring Kingdom Centre Tower/);
-  assert.match(css, /images\\.unsplash\\.com\\/photo-1663900108404-a05e8bf82cda/);
-  assert.doesNotMatch(css, /background-image:url\\(\\"assets\\/nisco-hero\\.jpg\\"\\)/);
+  assert.ok(css.includes("images.unsplash.com/photo-1663900108404-a05e8bf82cda"));
+  assert.ok(!css.includes('background-image:url("assets/nisco-hero.jpg")'));
   assert.match(html, /India and Saudi Arabia flags over a Riyadh skyline/);
 });
