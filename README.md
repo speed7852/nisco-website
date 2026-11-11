@@ -24,9 +24,10 @@ Portfolio descriptions deliberately distinguish delivered work from concepts and
 - Lead storage: Cloudflare D1.
 - Website consultation email: Brevo transactional email API.
 - AI model: Cloudflare Workers AI, @cf/meta/llama-3.3-70b-instruct-fp8-fast.
+- Hero photography: Saif Aldhaher, “A city at night” (Riyadh, Saudi Arabia), used under the Unsplash License. The image is served from the Unsplash CDN.
 - Source control: GitHub, default branch main.
 
-The Cloudflare Pages Git integration/deployment status must be checked in the Cloudflare dashboard; a GitHub commit alone does not prove that the live website has deployed.
+The Cloudflare Pages Git integration/deployment status must be checked in the Cloudflare dashboard; a GitHub commit alone does not prove that the live website has deployed. The previous summit photograph remains in assets/nisco-hero.jpg as an unused legacy file; the homepage now references the Riyadh skyline image.
 
 ## Run locally
 
