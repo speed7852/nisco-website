@@ -154,7 +154,6 @@ function getBusinessInfoReply(message) {
     if (/أين|الموقع|مقر|المدينة/.test(message)) return "يقع مقر NISCO في تشيناي، الهند، ويمكن للفريق مناقشة المشاريع المناسبة عن بُعد مع الشركات في الهند.";
   }
 
-  const lower = message.toLowerCase();
   const asksPrice = /\b(price|pricing|cost|how much|rate|charges|starting price|budget)\b/.test(lower);
   if (asksPrice) {
     if (/maintenance/.test(lower)) return "Website maintenance starts from ₹2,000 per month. The final plan depends on the website platform, updates, backups, security and support scope.";
