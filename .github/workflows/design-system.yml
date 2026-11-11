@@ -1,0 +1,33 @@
+name: NISCO Design System Governance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "styles.css"
+      - "DESIGN-SYSTEM.md"
+      - "scripts/check-design-system.mjs"
+      - ".github/workflows/design-system.yml"
+  pull_request:
+    paths:
+      - "index.html"
+      - "styles.css"
+      - "DESIGN-SYSTEM.md"
+      - "scripts/check-design-system.mjs"
+      - ".github/workflows/design-system.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  design-system-foundations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate design system foundations
+        run: node scripts/check-design-system.mjs
