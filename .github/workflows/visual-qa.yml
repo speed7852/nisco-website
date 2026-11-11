@@ -32,7 +32,7 @@ jobs:
           node-version: 22
       - name: Install Playwright
         run: |
-          npm install --no-save @playwright/test
+          npm install --no-save @playwright/test @axe-core/playwright
           npx playwright install --with-deps chromium
       - name: Run real-browser responsive tests
         run: npx playwright test
