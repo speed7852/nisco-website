@@ -69,3 +69,15 @@
 .nisco-chat button:focus-visible,.nisco-chat textarea:focus-visible{outline:3px solid #b67d22;outline-offset:2px}
 @media(max-width:760px){.nisco-chat{right:14px;bottom:14px;gap:9px}.nisco-chat-panel{width:calc(100vw - 28px);height:min(620px,calc(100dvh - 104px));min-height:340px}.nisco-chat-launcher{min-height:48px;padding:0 16px}}
 @media(prefers-reduced-motion:reduce){.nisco-chat-launcher:hover{transform:none}}
+
+
+/* Full NISCO business divisions and service catalogue. */
+.service-card{min-height:292px;display:flex;flex-direction:column;align-items:flex-start}
+.service-card p{min-height:36px}
+.service-list{list-style:none;margin:0 0 13px;padding:0;display:grid;gap:5px}
+.service-list li{position:relative;padding-left:13px;color:#e5ebf0;font-size:10px;line-height:1.4}
+.service-list li:before{content:"";position:absolute;left:0;top:.55em;width:5px;height:5px;border-radius:50%;background:var(--gold)}
+.service-card>a{margin-top:auto}
+.services-note{margin:12px 2px 0;color:#667181;font-size:10px;line-height:1.5}
+@media(max-width:760px){.service-card{min-height:278px}.service-card p{min-height:0}}
+@media(max-width:480px){.service-grid{grid-template-columns:1fr}.service-card{min-height:0}.service-card p{min-height:0}}
