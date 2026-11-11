@@ -1,5 +1,11 @@
 import { handleMcp } from "./mcp.js";
-const SYSTEM_PROMPT = `You are NISCO AI, the virtual business representative for NISCO. NISCO's brand promise is "Built to Rise. Driven to Grow." Be warm, concise, professional and commercially helpful. Use plain, easy-to-understand language and ask one focused question at a time.
+const SYSTEM_PROMPT = \`Language policy:
+- Support English and Modern Standard Arabic. Detect the latest user message language and reply in that language unless the visitor asks otherwise.
+- For Arabic, use clear professional Modern Standard Arabic. Preserve NISCO facts and approved prices exactly, and identify prices as Indian rupees (INR), not Saudi riyals.
+- Never translate or alter the public email nisco.in@outlook.com.
+- Keep answers concise, ask one focused question at a time, and do not mix languages unless the visitor does.
+
+You are NISCO AI, the virtual business representative for NISCO. NISCO's brand promise is "Built to Rise. Driven to Grow." Be warm, concise, professional and commercially helpful. Use plain, easy-to-understand language and ask one focused question at a time.
 
 NISCO is based in Chennai, India and serves suitable businesses across India. Public contact email: nisco.in@outlook.com. Do not publish or provide a business phone or WhatsApp number.
 
@@ -135,6 +141,19 @@ function validMessages(messages) {
 }
 
 function getBusinessInfoReply(message) {
+  const lower = message.toLowerCase();
+  if (/[؀-ۿ]/.test(message)) {
+    if (/سعر|الأسعار|التكلفة|كم يكلف|كم السعر|تكلفة/.test(message)) {
+      if (/صيانة/.test(message)) return "تبدأ صيانة المواقع لدى NISCO من 2,000 روبية هندية شهرياً. تعتمد الخطة النهائية على المنصة والتحديثات والنسخ الاحتياطي والأمان ونطاق الدعم.";
+      if (/روبوت|شات بوت|محادث/.test(message)) return "يبدأ إعداد روبوت المحادثة بالذكاء الاصطناعي لدى NISCO من 10,000 روبية هندية. يعتمد السعر النهائي على المحتوى ومسار الاستفسارات والتكاملات ومتطلبات النشر.";
+      if (/أتمتة|تلقائي|لوحة معلومات|باور بي آي/.test(message)) return "تبدأ خدمات أتمتة الأعمال من 15,000 روبية هندية. تعتمد التكلفة النهائية على العمليات والتكاملات والتقارير ومدى التعقيد.";
+      if (/موقع|ويب|متجر إلكتروني/.test(message)) return "يبدأ إنشاء موقع الأعمال لدى NISCO من 15,000 روبية هندية. السعر استرشادي ويعتمد العرض النهائي على نطاق العمل والمحتوى والتكاملات.";
+      return "الأسعار الاسترشادية في الهند: موقع الأعمال 15,000 روبية هندية، أتمتة الأعمال 15,000 روبية، روبوت المحادثة 10,000 روبية، صيانة الموقع 2,000 روبية شهرياً، ودعم الأتمتة 3,000 روبية شهرياً. هذه أسعار بداية وليست عروضاً نهائية.";
+    }
+    if (/تواصل|واتساب|رقم الهاتف|البريد|شخص|موظف/.test(message)) return "يمكنك التواصل مع NISCO عبر البريد الإلكتروني nisco.in@outlook.com. يمكنني أيضاً مساعدتك في إعداد استفسار لفريق NISCO.";
+    if (/أين|الموقع|مقر|المدينة/.test(message)) return "يقع مقر NISCO في تشيناي، الهند، ويمكن للفريق مناقشة المشاريع المناسبة عن بُعد مع الشركات في الهند.";
+  }
+
   const lower = message.toLowerCase();
   const asksPrice = /\b(price|pricing|cost|how much|rate|charges|starting price|budget)\b/.test(lower);
   if (asksPrice) {
