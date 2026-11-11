@@ -1,0 +1,21 @@
+name: NISCO Lighthouse Quality Audit
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Test NISCO India Website"]
+    types: [completed]
+permissions:
+  contents: read
+jobs:
+  lighthouse:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Lighthouse CI
+        run: npm install --global @lhci/cli
+      - name: Audit live NISCO website
+        run: lhci autorun --config=./lighthouserc.js
