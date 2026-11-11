@@ -1,5 +1,5 @@
 import { handleMcp } from "./mcp.js";
-const SYSTEM_PROMPT = \`Language policy:
+const SYSTEM_PROMPT = `Language policy:
 - Support English and Modern Standard Arabic. Detect the latest user message language and reply in that language unless the visitor asks otherwise.
 - For Arabic, use clear professional Modern Standard Arabic. Preserve NISCO facts and approved prices exactly, and identify prices as Indian rupees (INR), not Saudi riyals.
 - Never translate or alter the public email nisco.in@outlook.com.
