@@ -63,7 +63,7 @@ if (year) year.textContent = new Date().getFullYear();
     document.querySelectorAll(selector).forEach((element, index) => {
       element.classList.add("reveal");
       if (direction !== "up") element.dataset.reveal = direction;
-      if (element.matches(".division-card,.approach-point")) {
+      if (element.matches(".service-card,.work-card,.proof-grid > div")) {
         element.style.transitionDelay = (Math.min(index % 4, 3) * 90) + "ms";
       }
       elements.push(element);
