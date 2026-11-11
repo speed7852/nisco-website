@@ -1,91 +1,162 @@
-# NISCO Website — Starter Project
+# NISCO Website
 
-A responsive, static corporate website for NISCO using a navy-and-gold visual identity.
+Premium, responsive corporate website for NISCO, using the approved luxury corporate technology direction: midnight navy, warm gold, cream sections, and the brand line **“Built to Rise. Driven to Grow.”**
 
-## Included
-- Responsive homepage for desktop, tablet and mobile
-- NISCO brand header and navigation
-- Hero section using the approved NISCO sample artwork featuring three people reaching a summit
-- Four business divisions:
-  1. Digital Marketing
-  2. Digital Solutions (website development and maintenance)
-  3. Business Transformation
-  4. Business Services (real estate-related services, cattle feed/livestock supplies, trading and future ventures)
-- About, approach and contact sections
-- Mobile navigation and current-year footer
+## Current homepage
+
+The current homepage is the premium India–Saudi Arabia corporate version. Its sections are:
+
+1. Main navigation and city-skyline hero
+2. Four service cards: Digital Solutions, AI & Automation, Consulting, and Cloud & Integration
+3. Why NISCO / India–Saudi Arabia positioning
+4. Capability strip (markets, end-to-end delivery, practical solutions)
+5. Portfolio examples for Al Jawdah, Zafari Academy, and NISCO AI
+6. NISCO approach
+7. Consultation form and NISCO AI chat assistant
+
+Portfolio descriptions deliberately distinguish delivered work from concepts and in-house demonstrations. Do not add invented client counts, project metrics, testimonials, endorsements, or performance claims.
+
+## Technology and hosting
+
+- Front end: static HTML, CSS and vanilla JavaScript; no build step or package installation.
+- Static hosting: Cloudflare Pages, expected project domain https://nisco-website.pages.dev/.
+- AI backend: separate Cloudflare Worker in the nisco-ai/ directory.
+- Lead storage: Cloudflare D1.
+- Website consultation email: Brevo transactional email API.
+- AI model: Cloudflare Workers AI, @cf/meta/llama-3.3-70b-instruct-fp8-fast.
+- Source control: GitHub, default branch main.
+
+The Cloudflare Pages Git integration/deployment status must be checked in the Cloudflare dashboard; a GitHub commit alone does not prove that the live website has deployed.
 
 ## Run locally
-No build tools or package installation are required.
 
-1. Extract the ZIP.
-2. Open `index.html` in a browser.
-3. For a local development server, use VS Code Live Server or run `python -m http.server 8000` from this folder and open `http://localhost:8000`.
+No root-level dependencies are required.
 
-## Before publishing
-1. Replace `CONTACT_EMAIL_PLACEHOLDER` in `index.html` with the official NISCO business email.
-2. Confirm the final legal company name, address, phone, social links and business authorisations.
-3. Review service descriptions and remove anything NISCO does not currently offer.
-4. Add real project photos, team photos and approved company logo artwork.
-5. Add a privacy notice and configure an actual enquiry form if collecting visitor information.
-6. Connect the chosen domain after confirming ownership and availability.
+\`\`\`bash
+python -m http.server 8000
+\`\`\`
 
-## Deploy to Vercel
-1. Create a new GitHub repository (for example, `nisco-website`).
-2. Upload all files and folders from this project to the repository root.
-3. In Vercel, choose **Add New → Project**, import the repository and deploy.
-4. Framework preset: **Other**. Build command: leave blank. Output directory: `.`.
-5. Add the domain in Vercel after registering it with a domain registrar.
+Open http://localhost:8000.
 
-Cloudflare Pages can also deploy this static project directly from GitHub.
+Run the homepage regression tests:
+
+\`\`\`bash
+node --test tests/site.test.js
+\`\`\`
+
+Run the AI Worker tests and local development server from nisco-ai/:
+
+\`\`\`bash
+cd nisco-ai
+npm test
+npx wrangler dev
+\`\`\`
+
+The Worker tests use mocked services; they do not submit real enquiries or modify production D1 data.
+
+## Cloudflare Pages deployment
+
+The Pages project should be connected to this GitHub repository and the main branch.
+
+- Framework preset: None / static site
+- Build command: leave blank
+- Build output directory: repository root
+- Root directory: repository root
+
+Confirm the configured production branch and custom domains in Cloudflare Pages. Do not change DNS or domain settings as part of a routine code update.
+
+## NISCO AI Worker deployment
+
+The Worker configuration is in nisco-ai/wrangler.toml. The GitHub Actions workflow .github/workflows/deploy-nisco-ai.yml runs Worker tests, applies pending D1 migrations, and deploys the Worker when relevant Worker files change or when manually dispatched.
+
+Required GitHub Actions secrets:
+- CLOUDFLARE_API_TOKEN
+- CLOUDFLARE_ACCOUNT_ID
+
+Required Worker secrets:
+- BREVO_API_KEY (for the website consultation form email)
+- ADMIN_API_TOKEN (for protected lead administration)
+
+Worker variable:
+- BREVO_SENDER_EMAIL (must be a verified Brevo sender; currently configured in nisco-ai/wrangler.toml)
+
+Never commit secrets or put them in browser JavaScript, GitHub source files, or public configuration.
+
+The D1 database binding and database ID are configured in nisco-ai/wrangler.toml. Do not replace the database or edit production data during ordinary front-end work.
+
+## Enquiry handling
+
+### Website consultation form
+- Requires name, email, service, requirement, and explicit consent.
+- Phone and company are optional.
+- Sends the enquiry notification to nisco.in@outlook.com through Brevo.
+- Stores the enquiry in D1 after successful email delivery.
+- The visitor receives a success message only after the Worker reports success.
+
+### NISCO AI chat
+- Uses the Cloudflare Workers AI binding and D1.
+- Guides visitors through service qualification.
+- Stores a chat lead only after a contact method is provided and explicit consent is confirmed.
+- Chatbot lead capture does not automatically send WhatsApp or email notifications.
+- Do not claim a lead was saved unless the Worker confirms it.
+
+### Public contact and prices
+- Public email: nisco.in@outlook.com
+- Primary India sales location: Chennai
+- Indicative India starting prices are maintained in assets/nisco-india-config.js and the Worker system prompt. Keep them consistent:
+  - Business website: ₹15,000 onwards
+  - Business automation: ₹15,000 onwards
+  - AI chatbot: ₹10,000 onwards
+  - Website maintenance: ₹2,000/month onwards
+  - Automation support: ₹3,000/month onwards
+
+Prices are indicative, not fixed quotations. Confirm scope, third-party costs, taxes and delivery timeline in writing.
+
+## Security and privacy
+
+- Never commit API keys, tokens, credentials, or private customer data.
+- Keep public settings only in assets/nisco-india-config.js.
+- Keep consent required before saving a lead.
+- The privacy notice is privacy-policy.html.
+- Review retention, access and deletion controls before production launch.
+- Keep security headers in _headers aligned with the actual third-party services used.
+
+## Release checklist
+
+1. Run node --test tests/site.test.js.
+2. Run npm test from nisco-ai/ when Worker code changes.
+3. Review desktop and mobile layouts at common viewport sizes.
+4. Check all navigation anchors, service links, privacy links and form validation.
+5. Test the consultation form with a controlled test enquiry; verify Brevo delivery and D1 storage.
+6. Test NISCO AI service answers, consent flow and D1 lead capture.
+7. Confirm GitHub Actions results for Worker changes.
+8. Confirm the Cloudflare Pages production deployment and inspect the live site.
+9. Check browser console, network requests, accessibility and Lighthouse performance.
+10. Update this README whenever architecture, secrets, hosting, or lead-handling behaviour changes.
 
 ## Project structure
-```
+
+\`\`\`
 nisco-website/
 ├── index.html
 ├── styles.css
 ├── script.js
-├── README.md
-└── assets/
-    ├── favicon.svg
-    ├── nisco-logo.svg
-    └── nisco-hero.jpg
-```
-
-## Notes
-- This is the first homepage version, not a complete multi-page website.
-- The contact link is a placeholder until an official email address is supplied.
-- The hero uses a cropped photograph from the approved NISCO sample homepage; the logo is a vector recreation of the sample wordmark.
-- No analytics, tracking, backend, database or form submission service is configured yet.
-
-
-## NISCO AI agent
-The website includes a premium chat widget in `assets/nisco-chat.js`. Its agent backend is maintained separately in `nisco-ai/` and uses OpenAI's `gpt-4.1-mini` model with controlled lead-capture tool calling.
-
-- Backend setup, Cloudflare D1 migration, secrets and deployment: see [nisco-ai/README.md](nisco-ai/README.md).
-- The Worker is a separate Cloudflare deployment from the static Pages site.
-- Before the chat can answer live requests, configure the D1 database, add the `OPENAI_API_KEY` Worker secret, deploy the Worker, and replace the placeholder Worker URL in `assets/nisco-chat.js`.
-- Lead capture requires explicit visitor consent. No email or WhatsApp notification integration is configured yet.
-- Do not commit API keys or other secrets.
-
-
-## NISCO India service launch
-The homepage presents NISCO's India-focused digital services with indicative starting prices in INR:
-- Business website: ₹15,000
-- Business automation: ₹15,000
-- AI chatbot: ₹10,000
-- Website maintenance: from ₹2,000/month
-- Automation support: from ₹3,000/month
-
-Prices are starting points only. Final scope and quotation must be confirmed in writing. Third-party costs and applicable taxes are excluded unless explicitly included.
-
-### Contact and enquiry handling
-- Public contact: nisco.in@outlook.com
-- Public contact email: nisco.in@outlook.com
-- Primary India sales location: Chennai
-- `assets/nisco-india-config.js` contains public contact configuration only; never place API keys or private credentials in it.
-- The website enquiry form prepares an email draft for the visitor. It does not submit automatically or write form details to D1. The visitor reviews the draft and chooses whether to send it.
-- NISCO AI's existing guided lead capture remains a separate workflow using the Cloudflare Worker and D1 database.
-- Portfolio descriptions distinguish the Al Jawdah website project from the in-house NISCO AI demonstration. Do not add unverified client outcomes or testimonials.
-
-### Local checks
-Run `node --test tests/site.test.js` from the repository root to verify the public contact configuration, package information, enquiry form, portfolio labels and preservation of the NISCO AI widget.
+├── privacy-policy.html
+├── _headers
+├── assets/
+│   ├── nisco-logo.svg
+│   ├── nisco-hero.jpg
+│   ├── nisco-chat.js
+│   └── nisco-india-config.js
+├── tests/
+│   └── site.test.js
+├── .github/workflows/
+│   ├── deploy-nisco-ai.yml
+│   └── site-check.yml
+└── nisco-ai/
+    ├── src/
+    ├── migrations/
+    ├── tests/
+    ├── package.json
+    └── wrangler.toml
+\`\`\`
