@@ -10,7 +10,7 @@
 
   const API_URL = "https://nisco-ai.speedhome7852.workers.dev/chat";
   const history = [];
-  const welcomeMessage = "Hello! I’m NISCO AI, your business guide. I can help with websites, automation, AI chatbots, digital marketing and ongoing support. I can also explain our India starting prices. What would you like to explore?";
+  const welcomeMessage = "Hello! I’m NISCO AI, your business guide. I can help with digital marketing, websites, AI chatbots, business transformation, real-estate-related services, cattle feed and livestock supplies, and trading enquiries. I can also explain our India starting prices. What would you like to explore?";
   let busy = false;
   let leadSaved = false;
   let consentToken = "";
@@ -97,7 +97,8 @@
     "I need an AI chatbot": "I need an AI chatbot. Please guide me through an AI chatbot enquiry and ask one question at a time. Start by asking what I want the chatbot to do.",
     "Automate a process": "I want business automation. Please guide me through a business automation enquiry and ask one question at a time. Start by asking which process I want to improve.",
     "Grow my business": "I want to grow my business. Please guide me through a digital marketing enquiry and ask one question at a time. Start by asking about my business and growth goal.",
-    "Website maintenance": "I need website maintenance. Please guide me through a website maintenance enquiry and ask one question at a time. Start by asking about my current website."
+    "Website maintenance": "I need website maintenance. Please guide me through a website maintenance enquiry and ask one question at a time. Start by asking about my current website.",
+    "Explore business services": "I want to explore NISCO business and trading services, including real-estate-related services, cattle feed and livestock supplies, agricultural supplies, or trading and distribution. Ask me one question at a time to understand what I need."
   };
   suggestions.addEventListener("click", event => {
     const button = event.target.closest("button");
