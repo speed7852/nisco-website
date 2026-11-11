@@ -146,7 +146,6 @@ nisco-website/
 ├── _headers
 ├── robots.txt
 ├── sitemap.xml
-├── privacy-policy.html
 ├── lighthouserc.js
 ├── playwright.config.js
 ├── DESIGN-SYSTEM.md
