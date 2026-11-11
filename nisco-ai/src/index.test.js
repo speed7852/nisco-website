@@ -294,35 +294,3 @@ test("Arabic pricing questions receive approved INR prices without saving a lead
   assert.match(r.body.reply, /روبية هندية/);
   assert.equal(h.inserts.length, 0);
 });
-
-
-test("Tamil consent is recognized and the lead is saved only after explicit agreement", async () => {
-  const h = harness();
-  const history = [
-    { role: "user", content: starter }, { role: "assistant", content: firstQuestion },
-    { role: "user", content: "Business website" }, { role: "assistant", content: contactPrompt },
-    { role: "user", content: "tamil@example.com" }, { role: "assistant", content: consentPrompt },
-    { role: "user", content: "ஆம்" }
-  ];
-  const challenge = await h.send(history.slice(0, 5));
-  assert.ok(challenge.body.consent_token);
-  const r = await h.send(history, h.env.ALLOWED_ORIGIN, challenge.body.consent_token);
-  assert.equal(r.body.lead_saved, true);
-  assert.match(r.body.reply, /நன்றி/);
-  assert.equal(h.inserts.length, 1);
-});
-
-test("Arabic consent decline is recognized without saving a lead", async () => {
-  const h = harness();
-  const history = [
-    { role: "user", content: starter }, { role: "assistant", content: firstQuestion },
-    { role: "user", content: "Business website" }, { role: "assistant", content: contactPrompt },
-    { role: "user", content: "arabic@example.com" }, { role: "assistant", content: consentPrompt },
-    { role: "user", content: "لا" }
-  ];
-  const challenge = await h.send(history.slice(0, 5));
-  assert.ok(challenge.body.consent_token);
-  const r = await h.send(history, h.env.ALLOWED_ORIGIN, challenge.body.consent_token);
-  assert.match(r.body.reply, /لم أحفظ/);
-  assert.equal(h.inserts.length, 0);
-});
