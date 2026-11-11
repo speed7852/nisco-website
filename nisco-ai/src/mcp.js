@@ -41,7 +41,7 @@ export async function handleMcp(request, env) {
       const search = typeof args.search === "string" ? args.search.trim().slice(0, 100) : "";
       const where = search ? " WHERE name LIKE ? OR email LIKE ? OR phone LIKE ? OR service LIKE ? OR summary LIKE ?" : "";
       const pattern = "%" + search + "%";
-      const rows = await env.DB.prepare("SELECT id,created_at,name,email,phone,preferred_contact,service,summary,timeline,source,status FROM leads" + where + " ORDER BY created_at DESC LIMIT ?").bind(...(search ? [pattern, pattern, pattern, pattern, pattern, limit] : [limit])).all();
+      const rows = await env.DB.prepare("SELECT id,created_at,name,email,phone,preferred_contact,service,summary,timeline,source,status,lead_score,lead_priority FROM leads" + where + " ORDER BY created_at DESC LIMIT ?").bind(...(search ? [pattern, pattern, pattern, pattern, pattern, limit] : [limit])).all();
       value = { enquiries: rows.results || [], count: (rows.results || []).length };
     } else if (name === "get_enquiry") {
       if (!validId(args.lead_id)) throw new Error("A valid lead_id is required.");
@@ -64,7 +64,8 @@ export async function handleMcp(request, env) {
       const total = await env.DB.prepare("SELECT COUNT(*) AS count FROM leads").first();
       const today = await env.DB.prepare("SELECT COUNT(*) AS count FROM leads WHERE date(created_at)=date('now')").first();
       const statuses = await env.DB.prepare("SELECT status,COUNT(*) AS count FROM leads GROUP BY status ORDER BY status").all();
-      value = { total: total?.count || 0, today: today?.count || 0, statuses: statuses.results || [] };
+      const priorities = await env.DB.prepare("SELECT lead_priority,COUNT(*) AS count FROM leads GROUP BY lead_priority ORDER BY lead_priority").all();
+      value = { total: total?.count || 0, today: today?.count || 0, statuses: statuses.results || [], priorities: priorities.results || [] };
     } else {
       return reply(id, null, { code: -32602, message: "Unknown tool" });
     }
