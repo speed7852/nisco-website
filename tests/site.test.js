@@ -2,13 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const [html, css, script, chat, config, headers] = await Promise.all([
+const [html, css, script, chat, config, headers, worker] = await Promise.all([
   readFile(new URL("../index.html", import.meta.url), "utf8"),
   readFile(new URL("../styles.css", import.meta.url), "utf8"),
   readFile(new URL("../script.js", import.meta.url), "utf8"),
   readFile(new URL("../assets/nisco-chat.js", import.meta.url), "utf8"),
   readFile(new URL("../assets/nisco-india-config.js", import.meta.url), "utf8"),
-  readFile(new URL("../_headers", import.meta.url), "utf8")
+  readFile(new URL("../_headers", import.meta.url), "utf8"),
+  readFile(new URL("../nisco-ai/src/index.js", import.meta.url), "utf8")
 ]);
 
 test("NISCO brand, markets and approved positioning are present", () => {
@@ -67,4 +68,31 @@ test("responsive and accessible foundations remain configured", () => {
   assert.match(headers, /X-Frame-Options: DENY/);
   assert.match(headers, /Content-Security-Policy:/);
   assert.match(headers, /Permissions-Policy:/);
+});
+
+
+test("homepage scroll reveals target real sections and remain accessible", () => {
+  for (const selector of [
+    ".services-intro", ".service-card", ".why-image", ".why-copy",
+    ".proof-grid > div", ".work-heading", ".work-card",
+    ".insights-inner > div", ".consultation-copy", ".enquiry-form",
+    ".footer-main > div"
+  ]) assert.ok(script.includes(selector), "Missing reveal target: " + selector);
+  assert.match(css, /\.js-motion-enabled \.reveal/);
+  assert.match(css, /\.reveal\.is-visible/);
+  assert.match(css, /prefers-reduced-motion:reduce/);
+});
+
+test("consultation form preserves optional phone number end to end", () => {
+  assert.match(html, /id="enquiry-phone" name="phone"/);
+  assert.match(script, /phone: String\(values\.get\("phone"\) \|\| ""\)\.trim\(\)/);
+  assert.match(worker, /const phone = typeof enquiry\.phone === "string" \? enquiry\.phone\.trim\(\) : ""/);
+  assert.match(worker, /"Phone: " \+ \(phone \|\| "Not provided"\)/);
+  assert.match(worker, /VALUES \(\?, \?, \?, \?, \?, 'email', \?, \?, '', 1, 'website-form'\)/);
+});
+
+test("consultation button restores its original label after sending", () => {
+  assert.match(script, /submit\.dataset\.defaultHtml = submit\.innerHTML/);
+  assert.match(script, /submit\.innerHTML = submit\.dataset\.defaultHtml/);
+  assert.match(html, /Request a Consultation/);
 });
