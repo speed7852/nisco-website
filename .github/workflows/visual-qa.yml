@@ -1,0 +1,47 @@
+name: NISCO Visual and Responsive QA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "styles.css"
+      - "script.js"
+      - "assets/**"
+      - "tests/**"
+      - "playwright.config.js"
+      - ".github/workflows/visual-qa.yml"
+  pull_request:
+    paths:
+      - "index.html"
+      - "styles.css"
+      - "script.js"
+      - "assets/**"
+      - "tests/**"
+      - "playwright.config.js"
+      - ".github/workflows/visual-qa.yml"
+  workflow_dispatch:
+
+jobs:
+  responsive-browser-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save @playwright/test
+          npx playwright install --with-deps chromium
+      - name: Run real-browser responsive tests
+        run: npx playwright test
+      - name: Upload viewport screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nisco-responsive-qa
+          path: |
+            artifacts/
+            playwright-report/
+          if-no-files-found: ignore
