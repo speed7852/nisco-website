@@ -832,3 +832,10 @@ body{font-family:Inter,Arial,sans-serif;letter-spacing:-.01em}
  .contact-panel{padding:26px 22px}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.division-card,.button{transition:none}.division-card:hover,.button:hover{transform:none}}
+
+
+/* Accessibility contrast refinements */
+.eyebrow.dark{color:#4b5b6d}
+.approach-point h3{color:#ffffff}
+.approach-point p{color:#d3deea}
+.division-card h3{color:#102338}
