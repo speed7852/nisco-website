@@ -1,4 +1,5 @@
 import { handleMcp } from "./mcp.js";
+import { lookupNiscoKnowledge } from "./knowledge.js";
 const SYSTEM_PROMPT = `Language policy:
 - Support English and Modern Standard Arabic. Detect the latest user message language and reply in that language unless the visitor asks otherwise.
 - For Arabic, use clear professional Modern Standard Arabic. Preserve NISCO facts and approved prices exactly, and identify prices as Indian rupees (INR), not Saudi riyals.
@@ -375,6 +376,9 @@ export default {
       }
       return json({ reply: consentPrompt + " Please use the consent prompt shown above to continue." }, 200, allowed);
     }
+
+    const knowledge = lookupNiscoKnowledge(lastUserMessage);
+    if (knowledge) return json({ reply: knowledge.answer, knowledge_source: knowledge.source, knowledge_version: knowledge.version }, 200, allowed);
 
     const businessInfoReply = getBusinessInfoReply(lastUserMessage);
     if (businessInfoReply) return json({ reply: businessInfoReply }, 200, allowed);
