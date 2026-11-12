@@ -53,6 +53,21 @@ jobs:
           npx wrangler d1 migrations apply nisco-career-ai-db --remote --config career-ai/worker/wrangler.toml
           npx wrangler deploy --config career-ai/worker/wrangler.toml
 
+      - name: Configure private application access key
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CAREER_AI_ACCESS_KEY: ${{ secrets.CAREER_AI_ACCESS_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${CAREER_AI_ACCESS_KEY:-}" ]; then
+            echo "CAREER_AI_ACCESS_KEY GitHub Actions secret is missing."
+            exit 1
+          fi
+          printf '%s' "$CAREER_AI_ACCESS_KEY" | npx wrangler secret put APP_ACCESS_KEY --config career-ai/worker/wrangler.toml
+
+
       - name: Deploy Career AI Pages preview
         uses: cloudflare/wrangler-action@v3
         with:
