@@ -11,6 +11,9 @@ beforeEach(async () => {
   await env.DB.batch([
     env.DB.prepare("DELETE FROM applications"),
     env.DB.prepare("DELETE FROM jobs"),
+    env.DB.prepare("DELETE FROM profile_items"),
+    env.DB.prepare("DELETE FROM profile_snapshots"),
+    env.DB.prepare("DELETE FROM cv_versions"),
     env.DB.prepare("DELETE FROM profile"),
     env.DB.prepare("DELETE FROM documents"),
     env.DB.prepare("DELETE FROM discovery_runs"),

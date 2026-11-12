@@ -36,6 +36,22 @@ function cookieValue(request: Request, name: string): string | null {
   return null;
 }
 
+/**
+ * CV and profile routes hold personal data. In key mode, holding the private key is the owner
+ * identity. In Access mode, a verified Access identity is accepted only when ACCESS_ALLOWED_EMAILS
+ * names the owner explicitly (authenticate() has already checked the email is on that list); an
+ * empty list fails closed instead of trusting any identity the Access policy lets through.
+ */
+export function requireOwnerIdentity(auth: AuthContext | null, env: Env): void {
+  if (!auth) throw unauthorized();
+  if (auth.mode === "key") return;
+  const allowList = (env.ACCESS_ALLOWED_EMAILS ?? "").split(",").map((entry) => entry.trim()).filter(Boolean);
+  if (allowList.length === 0) {
+    throw serviceUnavailable("owner_not_configured", "Set ACCESS_ALLOWED_EMAILS to the owner's email before using CV and profile data.");
+  }
+  if (!auth.email) throw forbidden("not_allowed", "This account is not allowed to use Career AI.");
+}
+
 export function requireAccessKeyConfigured(env: Env): string {
   const key = env.APP_ACCESS_KEY;
   if (!key) throw serviceUnavailable("setup_required", "The private access key has not been configured.");

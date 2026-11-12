@@ -1,0 +1,105 @@
+import { describe, expect, it } from "vitest";
+import { isGrounded, structureCvText, type Proposal } from "../../src/profile/structure";
+import { valueStrings } from "../../src/profile/schema";
+import { SYNTHETIC_CV_TEXT } from "../helpers";
+
+const bySection = (proposals: Proposal[], section: string) => proposals.filter((p) => p.section === section).map((p) => p.value);
+
+describe("fixed-rule CV structuring", () => {
+  const proposals = structureCvText(SYNTHETIC_CV_TEXT);
+
+  it("finds contact details verbatim", () => {
+    expect(bySection(proposals, "name")).toEqual([{ text: "Alex Synthetic" }]);
+    expect(bySection(proposals, "headline")).toEqual([{ text: "Programme Manager (synthetic test CV)" }]);
+    expect(bySection(proposals, "email")).toEqual([{ text: "alex.synthetic@example.test" }]);
+    expect(bySection(proposals, "phone")).toEqual([{ text: "+966 50 000 0000" }]);
+    expect(bySection(proposals, "link")).toEqual([{ text: "https://example.test/alex" }]);
+  });
+
+  it("takes the summary and a stated number of years", () => {
+    expect(bySection(proposals, "summary")).toEqual([{ text: "Synthetic summary for automated tests only. 12+ years of experience in PMO governance." }]);
+    expect(bySection(proposals, "years_experience")).toEqual([{ text: "12" }]);
+  });
+
+  it("fills role and employer only for 'Role at Employer' and keeps dates as written", () => {
+    const [first, second] = bySection(proposals, "experience");
+    expect(first).toEqual({
+      heading: "Senior Programme Manager at Example Holdings",
+      role: "Senior Programme Manager",
+      employer: "Example Holdings",
+      start: "Jan 2020",
+      end: "Present",
+      achievements: ["Led a synthetic PMO of 5 people.", "Ran ITIL service transition for a fictional bank."],
+    });
+    expect(second).toEqual({ heading: "Project Manager | Fictional Bank", start: "2016", end: "2019", achievements: ["Delivered a synthetic core-banking upgrade."] });
+    expect(second).not.toHaveProperty("employer");
+  });
+
+  it("proposes education, certifications and skills", () => {
+    expect(bySection(proposals, "education")[0]).toMatchObject({ institution: "Example University", qualification: "BSc Computer Science", end: "2012" });
+    expect(bySection(proposals, "certification")).toEqual([{ name: "PMP", issuer: "Synthetic Institute", date: "2018" }, { name: "ITIL 4 Foundation" }]);
+    expect(bySection(proposals, "skill").map((value) => value.text)).toEqual(["PMO governance", "ITIL", "Stakeholder management", "Budgeting"]);
+  });
+
+  it("never proposes preferences: titles, approved locations, remote preference", () => {
+    for (const section of ["preferred_title", "approved_location", "remote_preference", "preferred_titles_text"]) {
+      expect(bySection(proposals, section)).toEqual([]);
+    }
+  });
+
+  it("records a span that contains every proposed string", () => {
+    for (const proposal of proposals) {
+      const span = SYNTHETIC_CV_TEXT.slice(proposal.start, proposal.end);
+      for (const value of valueStrings(proposal.value)) expect(span, proposal.section).toContain(value);
+    }
+  });
+
+  it("recognises heading variants, inline headings and keeps undated experience as free text", () => {
+    const text = "Jordan Example\nCore Competencies: Risk, Governance\nWORK HISTORY\nHelped several fictional teams.\nNo dates here.";
+    const result = structureCvText(text);
+    expect(bySection(result, "skill").map((v) => v.text)).toEqual(["Risk", "Governance"]);
+    expect(bySection(result, "experience_text")).toEqual([{ text: "Helped several fictional teams.\nNo dates here." }]);
+  });
+
+  it("does not mistake a year range for a phone number", () => {
+    const result = structureCvText("Sam Example\nAnalyst\n2016 - 2019\n");
+    expect(bySection(result, "phone")).toEqual([]);
+  });
+
+  it("returns nothing for empty or heading-only text", () => {
+    expect(structureCvText("")).toEqual([]);
+    expect(structureCvText("SKILLS\nEXPERIENCE\n")).toEqual([]);
+  });
+});
+
+describe("grounding invariant", () => {
+  it("rejects proposals whose values are not in their span", () => {
+    expect(isGrounded("abc def", { section: "skill", value: { text: "def" }, start: 4, end: 7 })).toBe(true);
+    expect(isGrounded("abc def", { section: "skill", value: { text: "invented" }, start: 0, end: 7 })).toBe(false);
+    expect(isGrounded("abc def", { section: "skill", value: { text: "abc" }, start: 4, end: 7 })).toBe(false);
+    expect(isGrounded("abc", { section: "skill", value: { text: "abc" }, start: 0, end: 99 })).toBe(false);
+    expect(isGrounded("abc", { section: "skill", value: {}, start: 0, end: 3 })).toBe(false);
+  });
+
+  it("holds for every proposal over many generated CV texts (fuzz)", () => {
+    // Deterministic pseudo-random generator so the test is reproducible.
+    let seed = 42;
+    const random = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+    const pick = <T,>(items: readonly T[]) => items[Math.floor(random() * items.length)]!;
+    const pieces = [
+      "SKILLS", "Experience", "EDUCATION", "Certifications:", "Summary", "•", "-", "Jan 2019 – Present", "2015 - 2018", "03/2020 to 05/2022",
+      "Lead at Fictional Co", "Analyst | Example Ltd", "PMP (Example Body), 2017", "a@b.test", "+1 555 000 0000", "https://example.test/x",
+      "Example University", "MSc Data, 2010", "Ran, Built; Shipped | Tested", "Ünïcødé Ñame", "", "   ", "12 years of work", "(unbalanced", "))",
+    ];
+    for (let run = 0; run < 400; run += 1) {
+      const lines = Array.from({ length: 5 + Math.floor(random() * 30) }, () => {
+        const count = 1 + Math.floor(random() * 3);
+        return Array.from({ length: count }, () => pick(pieces)).join(pick([" ", ", ", " | ", ""]));
+      });
+      const text = lines.join("\n");
+      for (const proposal of structureCvText(text)) {
+        expect(isGrounded(text, proposal), `${proposal.section} in run ${run}`).toBe(true);
+      }
+    }
+  });
+});

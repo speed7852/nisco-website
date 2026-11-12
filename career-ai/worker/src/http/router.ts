@@ -13,16 +13,24 @@ export interface RequestContext {
 
 export type Handler = (ctx: RequestContext) => Promise<Response>;
 
+export interface RouteOptions {
+  auth: boolean;
+  /** Holds CV or profile data: in Access mode, also requires an explicit owner identity. */
+  personal?: boolean;
+}
+
 interface Route {
   method: string;
+  path: string;
   pattern: RegExp;
   keys: string[];
   handler: Handler;
   auth: boolean;
+  personal: boolean;
 }
 
 export type RouteMatch =
-  | { kind: "found"; route: { handler: Handler; auth: boolean }; params: Record<string, string> }
+  | { kind: "found"; route: { handler: Handler; auth: boolean; personal: boolean }; params: Record<string, string> }
   | { kind: "method_not_allowed"; allow: string[] }
   | { kind: "not_found" };
 
@@ -30,7 +38,7 @@ export type RouteMatch =
 export class Router {
   private readonly routes: Route[] = [];
 
-  add(method: string, path: string, handler: Handler, options: { auth: boolean }): this {
+  add(method: string, path: string, handler: Handler, options: RouteOptions): this {
     const keys: string[] = [];
     const source = path
       .split("/")
@@ -42,8 +50,21 @@ export class Router {
         return segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       })
       .join("/");
-    this.routes.push({ method, pattern: new RegExp(`^${source}$`), keys, handler, auth: options.auth });
+    this.routes.push({
+      method,
+      path,
+      pattern: new RegExp(`^${source}$`),
+      keys,
+      handler,
+      auth: options.auth,
+      personal: options.personal ?? false,
+    });
     return this;
+  }
+
+  /** Every registered route, for tests that must cover all of them. */
+  list(): { method: string; path: string; auth: boolean; personal: boolean }[] {
+    return this.routes.map(({ method, path, auth, personal }) => ({ method, path, auth, personal }));
   }
 
   match(method: string, pathname: string): RouteMatch {
@@ -59,7 +80,7 @@ export class Router {
       route.keys.forEach((key, index) => {
         params[key] = decodeURIComponentSafe(found[index + 1] ?? "");
       });
-      return { kind: "found", route: { handler: route.handler, auth: route.auth }, params };
+      return { kind: "found", route: { handler: route.handler, auth: route.auth, personal: route.personal }, params };
     }
     return allow.length > 0 ? { kind: "method_not_allowed", allow } : { kind: "not_found" };
   }

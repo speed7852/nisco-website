@@ -1,4 +1,4 @@
-import { authenticate, authMode } from "./auth";
+import { authenticate, authMode, requireOwnerIdentity } from "./auth";
 import type { JwksFetcher } from "./auth/access-jwt";
 import { clientKey, enforceRateLimit } from "./auth/rate-limit";
 import type { Env } from "./env";
@@ -7,6 +7,30 @@ import { HttpError, notFound } from "./http/errors";
 import { errorResponse, json, withHeaders } from "./http/responses";
 import { Router, type RequestContext } from "./http/router";
 import { createApplication, listApplicationsRoute, updateApplicationRoute } from "./routes/applications";
+import {
+  activateCvVersionRoute,
+  deactivateCvVersionRoute,
+  deleteCvVersion,
+  downloadCvVersion,
+  getCvVersionRoute,
+  getExtractedText,
+  listCvVersionsRoute,
+  registerExistingUpload,
+  rejectRemainingProposals,
+  submitExtraction,
+  uploadCvVersion,
+} from "./routes/cv";
+import {
+  confirmProfileItem,
+  createProfileItem,
+  deleteAllProfileItems,
+  deleteProfileItem,
+  exportProfile,
+  listProfileItems,
+  proposeFromLegacyProfile,
+  rejectProfileItem,
+  updateProfileItem,
+} from "./routes/profile-items";
 import { listDiscoveryRuns } from "./routes/discovery";
 import { createDraft } from "./routes/drafts";
 import { downloadFile, listFiles, reconcileFiles, removeFile, uploadFile } from "./routes/files";
@@ -35,7 +59,28 @@ export const router = new Router()
   .add("POST", "/api/files/reconcile", reconcileFiles, { auth: true })
   .add("GET", "/api/files/:id", downloadFile, { auth: true })
   .add("DELETE", "/api/files/:id", removeFile, { auth: true })
-  .add("GET", "/api/discovery/runs", listDiscoveryRuns, { auth: true });
+  .add("GET", "/api/discovery/runs", listDiscoveryRuns, { auth: true })
+  // Phase 2: master CV versions and the structured profile. `personal` routes hold CV/profile data.
+  .add("GET", "/api/cv/versions", listCvVersionsRoute, { auth: true, personal: true })
+  .add("POST", "/api/cv/versions", uploadCvVersion, { auth: true, personal: true })
+  .add("POST", "/api/cv/versions/from-upload", registerExistingUpload, { auth: true, personal: true })
+  .add("GET", "/api/cv/versions/:id", getCvVersionRoute, { auth: true, personal: true })
+  .add("DELETE", "/api/cv/versions/:id", deleteCvVersion, { auth: true, personal: true })
+  .add("GET", "/api/cv/versions/:id/download", downloadCvVersion, { auth: true, personal: true })
+  .add("GET", "/api/cv/versions/:id/text", getExtractedText, { auth: true, personal: true })
+  .add("POST", "/api/cv/versions/:id/extraction", submitExtraction, { auth: true, personal: true })
+  .add("POST", "/api/cv/versions/:id/activate", activateCvVersionRoute, { auth: true, personal: true })
+  .add("POST", "/api/cv/versions/:id/deactivate", deactivateCvVersionRoute, { auth: true, personal: true })
+  .add("POST", "/api/cv/versions/:id/proposals/reject", rejectRemainingProposals, { auth: true, personal: true })
+  .add("GET", "/api/profile/items", listProfileItems, { auth: true, personal: true })
+  .add("POST", "/api/profile/items", createProfileItem, { auth: true, personal: true })
+  .add("DELETE", "/api/profile/items", deleteAllProfileItems, { auth: true, personal: true })
+  .add("PATCH", "/api/profile/items/:id", updateProfileItem, { auth: true, personal: true })
+  .add("DELETE", "/api/profile/items/:id", deleteProfileItem, { auth: true, personal: true })
+  .add("POST", "/api/profile/items/:id/confirm", confirmProfileItem, { auth: true, personal: true })
+  .add("POST", "/api/profile/items/:id/reject", rejectProfileItem, { auth: true, personal: true })
+  .add("POST", "/api/profile/legacy/proposals", proposeFromLegacyProfile, { auth: true, personal: true })
+  .add("GET", "/api/profile/export", exportProfile, { auth: true, personal: true });
 
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -80,14 +125,9 @@ export async function handleRequest(request: Request, env: Env, options: AppOpti
       await enforceRateLimit(env.API_RATE_LIMITER, clientKey(request, "api"));
     }
 
-    const ctx: RequestContext = {
-      request,
-      env,
-      url,
-      params: match.params,
-      auth: match.route.auth ? await authenticate(request, env, options.fetchJwks) : null,
-      requestId,
-    };
+    const auth = match.route.auth ? await authenticate(request, env, options.fetchJwks) : null;
+    if (match.route.personal) requireOwnerIdentity(auth, env);
+    const ctx: RequestContext = { request, env, url, params: match.params, auth, requestId };
     return withHeaders(await match.route.handler(ctx), cors);
   } catch (error) {
     if (error instanceof HttpError) return withHeaders(errorResponse(error), cors);
