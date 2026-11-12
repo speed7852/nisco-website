@@ -1,0 +1,7 @@
+name = "nisco-career-ai-api"
+main = "src/index.ts"
+compatibility_date = "2026-11-12"
+workers_dev = true
+
+[vars]
+APP_NAME = "NISCO Career AI"
