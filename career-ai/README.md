@@ -26,6 +26,7 @@ yourself; the tracker records what you did.
 ```
 career-ai/
   frontend/            Static Pages app: index.html, app.js, styles.css, config.js, _headers
+  e2e/                 Browser journey (Playwright) against an isolated local Worker
   worker/              Worker API (TypeScript)
     src/
       index.ts         Entry: fetch (HTTP API) and scheduled (discovery)
@@ -46,36 +47,41 @@ career-ai/
 
 ## Develop
 
-Requirements: Node.js 22. All tools are pinned in `worker/package-lock.json`.
+Requirements: Node.js 22. All tools are pinned in `worker/package-lock.json` and
+`e2e/package-lock.json`.
 
 ```bash
 cd career-ai/worker
 npm ci
-npm run check          # strict typecheck + all tests (local D1/R2, Workers AI stubbed)
+npm run check          # strict typecheck + all Worker tests (local D1/R2, Workers AI stubbed)
+
+cd ../e2e
+npm ci
+npx playwright install --with-deps chromium   # once per machine
+npm test               # 25-check browser journey against an isolated local Worker
 ```
 
-To run the API locally against a local database:
+`docs/TESTING.md` lists every command, what each suite covers and the latest results.
+
+To click through the app locally, use the same isolated setup the browser journey uses. Nothing is
+edited and nothing reaches Cloudflare:
 
 ```bash
-cd career-ai/worker
-npx wrangler d1 migrations apply nisco-career-ai-db --local
-cat > .dev.vars <<'EOF'       # git-ignored; synthetic values only
-APP_ACCESS_KEY=local-dev-key-change-me
-ALLOWED_ORIGINS=http://127.0.0.1:4173
-EOF
-npx wrangler dev --local --port 8799
+cd career-ai/e2e
+node scripts/start-worker.js      # terminal 1: Worker on http://127.0.0.1:8799, fresh local D1/R2
+node scripts/serve-frontend.js    # terminal 2: app on http://127.0.0.1:4174 with production headers
 ```
 
-Then serve `career-ai/frontend` on port 4173 (for example `python3 -m http.server 4173`) with
-`config.js` temporarily pointing `apiBase` at `http://127.0.0.1:8799`. Do not commit that change.
-Workers AI is not available in local mode, so assessments and drafts show their failure states.
+Open http://127.0.0.1:4174 and sign in with the synthetic `ACCESS_KEY` from `e2e/e2e.config.js`.
+The local Worker has no Workers AI binding, so assessments and drafts show their failure states. Data
+is discarded when the Worker stops.
 
 ## Documentation
 
 - `docs/ARCHITECTURE.md` - components, data model, request pipeline, matching and discovery
 - `docs/DEPLOYMENT.md` - how deployment works, secrets, manual GitHub/Cloudflare steps, rollback
 - `docs/ACCESS.md` - Cloudflare Access design and the exact steps to enable it
-- `docs/TESTING.md` - what the tests cover and how they map to the engineering audit
+- `docs/TESTING.md` - exact test commands, latest results, audit-probe coverage, browser journey isolation and failure evidence
 
 ## Rules for contributors
 

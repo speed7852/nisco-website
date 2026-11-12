@@ -8,8 +8,12 @@ Worker have their own workflows and are not affected.
 `.github/workflows/deploy-career-ai.yml` starts on a push to `career-ai-deploy` that touches
 `career-ai/**` or the Career AI workflows, or by manual dispatch.
 
-1. **Checks** (`test-career-ai.yml`): `npm ci`, strict typecheck, all Worker tests, frontend syntax,
-   and the repository hygiene check. If any fail, nothing is deployed.
+1. **Checks** (`test-career-ai.yml`), two jobs that must both pass, or nothing is deployed:
+   - *Typecheck and tests*: `npm ci`, strict typecheck, all Worker tests, frontend syntax, the
+     repository hygiene check and `npm audit --audit-level=high`;
+   - *Browser journey*: the 25-check Playwright journey against the real Worker on
+     `wrangler dev --local` (fresh local D1/R2, no Workers AI binding, no credentials) with the
+     production headers from `frontend/_headers`. See `TESTING.md`.
 2. **Deploy** (only on `refs/heads/career-ai-deploy`, in the `career-ai-production` environment):
    1. check the three secrets exist;
    2. look up the D1 database `nisco-career-ai-db` by name (stops if not exactly one; never creates);
@@ -40,7 +44,7 @@ These are **not configured by this repository**. Do them in the GitHub and Cloud
    not exist when the workflow first runs, GitHub creates it **without** protection and the
    deployment proceeds without approval.
 2. **Branch protection (recommended).** Protect `career-ai-deploy`: require a pull request and the
-   status check *Typecheck and tests*.
+   status checks *Typecheck and tests* and *Browser journey (local Worker, production headers)*.
 3. **Commit the D1 database ID (recommended).** The deploy log prints `Using D1 database <id>`. Add
    `database_id = "<id>"` under `database_name` in `worker/wrangler.toml` and delete the lookup step.
    The ID is an identifier, not a secret (`nisco-ai/wrangler.toml` already commits its own).

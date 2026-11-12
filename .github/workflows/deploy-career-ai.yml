@@ -2,7 +2,8 @@ name: Deploy NISCO Career AI
 
 # Production deployment of the Career AI Worker, D1 migrations and Pages app.
 # Safeguards (see career-ai/docs/DEPLOYMENT.md):
-# - deploys only from career-ai-deploy, and only after the test workflow passes;
+# - deploys only from career-ai-deploy, and only after test-career-ai.yml passes (unit and
+#   integration tests, typecheck, audit, hygiene, and the browser journey);
 # - runs in the "career-ai-production" GitHub Environment (configure required reviewers there);
 # - never cancels a deployment in progress;
 # - uses the Wrangler version pinned in career-ai/worker/package-lock.json;
