@@ -9,7 +9,7 @@
   <title>NISCO Career AI</title>
   <link rel="stylesheet" href="styles.css">
   <script src="config.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="app.js" type="module"></script>
 </head>
 <body>
 <main class="wrap">
@@ -57,36 +57,85 @@
 
     <section id="tab-profile" class="panel" aria-labelledby="profile-title">
       <h2 id="profile-title">Career profile</h2>
-      <p class="muted small">Keep these details accurate. AI drafts and match assessments use only the facts saved here.</p>
-      <form id="profile-form" novalidate>
-        <div class="grid">
-          <div class="field"><label for="p-name">Full name</label><input id="p-name" name="name" maxlength="120" autocomplete="name"></div>
-          <div class="field"><label for="p-headline">Professional headline</label><input id="p-headline" name="headline" maxlength="200"></div>
-          <div class="field"><label for="p-years">Years of experience</label><input id="p-years" name="years" type="number" min="0" max="60" step="1" inputmode="numeric"></div>
-          <div class="field"><label for="p-location">Current base and preferred locations</label><input id="p-location" name="location" maxlength="300"></div>
-        </div>
-        <label for="p-summary">Professional summary</label><textarea id="p-summary" name="summary" rows="4" maxlength="4000"></textarea>
-        <label for="p-skills">Verified skills (comma separated)</label><textarea id="p-skills" name="skills" rows="3" maxlength="4000"></textarea>
-        <label for="p-experience">Verified experience and achievements</label><textarea id="p-experience" name="experience" rows="7" maxlength="20000"></textarea>
-        <label for="p-roles">Target roles (comma separated; also used to search job feeds)</label><textarea id="p-roles" name="roles" rows="3" maxlength="2000"></textarea>
-        <div class="actions"><button type="submit">Save career profile</button><span id="profile-saved" class="small muted"></span></div>
-      </form>
+      <p class="muted small">Matching and drafts use only the facts you have <strong>confirmed</strong>. Anything read from your CV or from your original notes is a proposal until you confirm it, and nothing is ever invented.</p>
 
-      <h3>CV files</h3>
-      <p class="muted small">PDF or Word (.docx) up to 8 MB. Files are stored privately and are only downloadable after you sign in. Automatic text extraction is not available yet.</p>
-      <div class="row">
-        <div class="field"><label for="cv-file">Choose a CV file</label><input id="cv-file" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></div>
-      </div>
-      <div class="actions">
-        <button id="upload-cv" type="button" class="secondary">Upload privately</button>
-        <button id="reconcile-files" type="button" class="secondary">Find earlier uploads</button>
-      </div>
-      <ul id="files-list" class="list"></ul>
+      <section class="sub" aria-labelledby="master-cv-title">
+        <h3 id="master-cv-title">Master CV</h3>
+        <p id="master-cv-status" class="small" role="status"></p>
+        <p class="muted small">PDF or Word (.docx) up to 8 MB, stored privately and downloadable only after you sign in. The text is read in this browser and checked by the server. Scanned PDFs without a text layer cannot be read (no OCR).</p>
+        <div class="row">
+          <div class="field"><label for="master-cv-file">Choose your CV</label><input id="master-cv-file" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></div>
+        </div>
+        <div class="actions"><button id="master-cv-upload" type="button">Upload and read CV</button></div>
+        <div class="row">
+          <div class="field"><label for="register-upload-file">Or use a file you uploaded earlier</label><select id="register-upload-file"></select></div>
+        </div>
+        <div class="actions"><button id="register-upload" type="button" class="secondary">Use as a CV version and read it</button></div>
+        <h4>CV versions</h4>
+        <p class="muted small">One version is your active master CV. Older versions stay available until you delete them.</p>
+        <div id="cv-versions"></div>
+      </section>
+
+      <section class="sub" aria-labelledby="proposals-title">
+        <div class="bar"><h3 id="proposals-title">Facts awaiting your review</h3><span id="proposal-count" class="pill"></span></div>
+        <p class="muted small">Confirm what is correct, edit before confirming if the wording needs fixing, and reject the rest. Each proposal shows where it came from.</p>
+        <div id="proposals"></div>
+      </section>
+
+      <section class="sub" aria-labelledby="facts-title">
+        <div class="bar"><h3 id="facts-title">Confirmed profile</h3><span id="confirmed-count" class="pill"></span></div>
+        <p id="profile-missing" class="small"></p>
+        <div id="facts"></div>
+      </section>
+
+      <section class="sub" aria-labelledby="notes-title">
+        <h3 id="notes-title">Original profile notes</h3>
+        <p class="muted small">Your earlier profile, kept exactly as you saved it (a copy is kept before every change). These notes are not used for matching or drafts until you review them as proposals and confirm them.</p>
+        <form id="profile-form" novalidate>
+          <div class="grid">
+            <div class="field"><label for="p-name">Full name</label><input id="p-name" name="name" maxlength="120" autocomplete="name"></div>
+            <div class="field"><label for="p-headline">Professional headline</label><input id="p-headline" name="headline" maxlength="200"></div>
+            <div class="field"><label for="p-years">Years of experience</label><input id="p-years" name="years" type="number" min="0" max="60" step="1" inputmode="numeric"></div>
+            <div class="field"><label for="p-location">Current base and preferred locations</label><input id="p-location" name="location" maxlength="300"></div>
+          </div>
+          <label for="p-summary">Professional summary</label><textarea id="p-summary" name="summary" rows="4" maxlength="4000"></textarea>
+          <label for="p-skills">Verified skills (comma separated)</label><textarea id="p-skills" name="skills" rows="3" maxlength="4000"></textarea>
+          <label for="p-experience">Verified experience and achievements</label><textarea id="p-experience" name="experience" rows="7" maxlength="20000"></textarea>
+          <label for="p-roles">Target roles (comma separated; also used to search job feeds)</label><textarea id="p-roles" name="roles" rows="3" maxlength="2000"></textarea>
+          <div class="actions">
+            <button type="submit">Save career profile</button>
+            <button id="legacy-propose" type="button" class="secondary">Review these notes as proposals</button>
+            <span id="profile-saved" class="small muted"></span>
+          </div>
+        </form>
+      </section>
+
+      <section class="sub" aria-labelledby="files-title">
+        <h3 id="files-title">CV files</h3>
+        <p class="muted small">Other private files: PDF or Word (.docx) up to 8 MB, stored privately and only downloadable after you sign in. Files uploaded here are not read; to read one into your profile, choose it under Master CV.</p>
+        <div class="row">
+          <div class="field"><label for="cv-file">Choose a CV file</label><input id="cv-file" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></div>
+        </div>
+        <div class="actions">
+          <button id="upload-cv" type="button" class="secondary">Upload privately</button>
+          <button id="reconcile-files" type="button" class="secondary">Find earlier uploads</button>
+        </div>
+        <ul id="files-list" class="list"></ul>
+      </section>
+
+      <section class="sub" aria-labelledby="data-title">
+        <h3 id="data-title">Your data</h3>
+        <p class="muted small">The export is a JSON file with your original notes and their saved copies, every profile fact with its source and status, your CV versions with their extracted text, and your file list. Storage keys and access secrets are never included. Deleting profile facts keeps your original notes and CV files; delete CV versions one by one above.</p>
+        <div class="actions">
+          <button id="export-profile" type="button" class="secondary">Export my profile data</button>
+          <button id="delete-profile-data" type="button" class="danger">Delete all profile facts…</button>
+        </div>
+      </section>
     </section>
 
     <section id="tab-jobs" class="panel" aria-labelledby="jobs-title" hidden>
       <div class="bar"><h2 id="jobs-title">Job intelligence</h2><span id="last-run" class="pill">No discovery run yet</span></div>
-      <p class="muted small">Add a role you found, or let the twice-daily discovery (06:00 and 18:00 Riyadh time) find public listings. New jobs are assessed against your saved profile.</p>
+      <p class="muted small">Add a role you found, or let the twice-daily discovery (06:00 and 18:00 Riyadh time) find public listings. New jobs are assessed against your confirmed profile facts.</p>
       <form id="job-form" novalidate>
         <div class="grid">
           <div class="field"><label for="j-title">Job title</label><input id="j-title" name="title" maxlength="200" required></div>
@@ -105,7 +154,7 @@
 
     <section id="tab-studio" class="panel" aria-labelledby="studio-title" hidden>
       <h2 id="studio-title">Application studio</h2>
-      <p class="muted small">Drafts use your <strong>saved</strong> profile only. Save profile changes first. Review every claim before use; anything marked [TO CONFIRM] is not in your profile.</p>
+      <p class="muted small">Drafts use your <strong>confirmed</strong> profile facts only. Review every claim before use; anything marked [TO CONFIRM] is not in your confirmed profile.</p>
       <label for="draft-job">Job</label><select id="draft-job"></select>
       <label for="draft-task">Draft type</label>
       <select id="draft-task">
@@ -134,5 +183,17 @@
     <p class="foot">NISCO Career AI · Private single-user workspace · Applications are never submitted automatically.</p>
   </section>
 </main>
+<dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+  <h2 id="confirm-title">Confirm</h2>
+  <p id="confirm-text"></p>
+  <div id="confirm-phrase-row">
+    <label for="confirm-input">Type <strong id="confirm-phrase"></strong> to confirm</label>
+    <input id="confirm-input" autocomplete="off" autocapitalize="off" spellcheck="false">
+  </div>
+  <div class="actions">
+    <button id="confirm-ok" type="button">Confirm</button>
+    <button id="confirm-cancel" type="button" class="secondary">Cancel</button>
+  </div>
+</dialog>
 </body>
 </html>

@@ -171,6 +171,26 @@ test("07 the career profile is saved", async () => {
   expect(stored.profile).toMatchObject({ name: PROFILE.name, years: 11, roles: PROFILE.roles });
 });
 
+// Phase 2: matching and drafts use confirmed facts only, so the saved notes are reviewed as
+// proposals and confirmed one by one before the job checks below.
+test("07b the saved notes are reviewed as proposals and confirmed one by one", async () => {
+  await expectMessage(() => page.click("#legacy-propose"), "6 proposal(s) created from your saved notes");
+  const proposals = page.locator("#proposals article.proposal");
+  await expect(proposals).toHaveCount(6);
+  await expect(page.locator("#proposals")).toContainText("From your original profile notes");
+  for (let remaining = 6; remaining > 0; remaining -= 1) {
+    await page.locator("#proposals button.confirm").first().click();
+    await expect(proposals).toHaveCount(remaining - 1);
+  }
+  const { items } = await apiGet("/api/profile/items");
+  expect(items.filter((item) => item.status === "confirmed").map((item) => item.section).sort()).toEqual(
+    ["experience_text", "headline", "name", "preferred_titles_text", "skills_text", "years_experience"],
+  );
+  expect(items.every((item) => item.source.type === "legacy_profile")).toBe(true);
+  // The notes themselves are unchanged.
+  expect((await apiGet("/api/profile")).profile).toMatchObject({ name: PROFILE.name, skills: PROFILE.skills });
+});
+
 test("08 a javascript: job link is rejected and the field is marked invalid", async () => {
   await page.click("[data-tab=jobs]");
   await page.fill("#j-title", "Programme Manager");
