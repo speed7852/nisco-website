@@ -1,0 +1,134 @@
+name: Test NISCO Career AI
+
+# Checks only: no secrets, no Cloudflare access, no deployment. Two jobs: unit/integration tests
+# with static checks, and the browser journey against an isolated local Worker.
+# Runs on pull requests into career-ai-deploy, on pushes to Career AI feature branches, and is
+# called by deploy-career-ai.yml so a deployment cannot start before these checks pass.
+on:
+  pull_request:
+    branches:
+      - career-ai-deploy
+    paths:
+      - "career-ai/**"
+      - ".github/workflows/test-career-ai.yml"
+      - ".github/workflows/deploy-career-ai.yml"
+  push:
+    branches:
+      - "career-ai-phase-*"
+    paths:
+      - "career-ai/**"
+      - ".github/workflows/test-career-ai.yml"
+      - ".github/workflows/deploy-career-ai.yml"
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Typecheck and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: career-ai/worker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: career-ai/worker/package-lock.json
+
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Strict TypeScript check
+        run: npm run typecheck
+
+      - name: Worker tests (local D1/R2, stubbed Workers AI)
+        run: npm test
+
+      - name: Frontend script syntax
+        working-directory: career-ai/frontend
+        run: |
+          node --check app.js
+          node --check config.js
+
+      - name: No personal documents or credentials committed
+        working-directory: .
+        run: bash career-ai/scripts/check-repo-hygiene.sh
+
+      - name: Dependency audit (high and critical advisories block)
+        run: npm audit --audit-level=high
+
+  e2e:
+    name: Browser journey (local Worker, production headers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # No secrets are referenced anywhere in this job. The harness also strips Cloudflare credential
+    # variables, hides any stored `wrangler login`, removes the Workers AI binding and cron from its
+    # generated config, and runs `wrangler dev --local` on a fresh temporary D1/R2 directory.
+    env:
+      CI: "true"
+      WRANGLER_SEND_METRICS: "false"
+    defaults:
+      run:
+        working-directory: career-ai/e2e
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            career-ai/worker/package-lock.json
+            career-ai/e2e/package-lock.json
+
+      - name: Refuse to run with Cloudflare credentials present
+        run: |
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_KEY CF_API_TOKEN CF_ACCOUNT_ID; do
+            if [ -n "${!name:-}" ]; then echo "::error::$name must not be set for browser tests."; exit 1; fi
+          done
+          echo "No Cloudflare credentials in the environment."
+
+      - name: Install Worker dependencies (pinned Wrangler for the local Worker)
+        working-directory: career-ai/worker
+        run: npm ci --no-audit --no-fund
+
+      - name: Install browser-test dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Browser-test script syntax and dependency audit
+        run: |
+          npm run check
+          npm audit --audit-level=high
+
+      - name: Install Chromium for the pinned Playwright version
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the browser journey
+        run: npm test
+
+      - name: Upload failure evidence (report, screenshots, page state, trace, Worker and server logs)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: career-ai-e2e-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            career-ai/e2e/playwright-report/
+            career-ai/e2e/test-results/
+            career-ai/e2e/logs/
+          retention-days: 14
+          if-no-files-found: warn
