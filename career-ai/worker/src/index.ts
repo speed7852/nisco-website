@@ -19,7 +19,7 @@ export default {
    if(u.pathname==="/api/applications"&&req.method==="POST"){const a=await req.json() as any;if(!a.jobId)return out({error:"jobId required"},400,ch);const id=crypto.randomUUID();await env.DB.prepare("INSERT INTO applications(id,job_id,status,notes,updated_at) VALUES(?,?,?,?,?)").bind(id,a.jobId,a.status??"prepared",a.notes??"",new Date().toISOString()).run();return out({ok:true,id},201,ch);}
    if(u.pathname.startsWith("/api/applications/")&&req.method==="PUT"){const id=u.pathname.split("/").pop(),a=await req.json() as any;await env.DB.prepare("UPDATE applications SET status=?,notes=?,updated_at=? WHERE id=?").bind(a.status??"prepared",a.notes??"",new Date().toISOString(),id).run();return out({ok:true},200,ch);}
    if(u.pathname==="/api/ai/draft"&&req.method==="POST"){const b=await req.json() as any;if(!b.profile||!b.job||!b.task)return out({error:"task, profile and job required"},400,ch);const a=await runAI(env,"Create a truthful "+b.task+" for this job. Candidate facts: "+JSON.stringify(b.profile)+". Job: "+JSON.stringify(b.job)+". Flag unknown details; do not fabricate.");return out({draft:(a as any).response??a,approvalRequired:true},200,ch);}
-   if(u.pathname==="/api/files"&&req.method==="POST"){const key="private/"+crypto.randomUUID(),name=req.headers.get("x-file-name")??"career-document";await env.PRIVATE_FILES.put(key,req.body,{httpMetadata:{contentType:req.headers.get("content-type")??"application/octet-stream"},customMetadata:{originalName:name}});return out({ok:true,key,name},201,ch);}
+   if(u.pathname==="/api/files"&&req.method==="POST"){const size=Number(req.headers.get("content-length")||0);if(size>8*1024*1024)return out({error:"file_too_large",message:"Maximum CV upload size is 8 MB."},413,ch);const key="private/"+crypto.randomUUID(),name=decodeURIComponent(req.headers.get("x-file-name")??"career-document");await env.PRIVATE_FILES.put(key,req.body,{httpMetadata:{contentType:req.headers.get("content-type")??"application/octet-stream"},customMetadata:{originalName:name}});return out({ok:true,key,name},201,ch);}
    return out({error:"not_found"},404,ch);
   }catch(e){console.error(e);return out({error:"internal_error"},500,ch);}
  },
@@ -48,7 +48,18 @@ export default {
      checked++;
      const exists=await env.DB.prepare("SELECT id FROM jobs WHERE url=? LIMIT 1").bind(url).first();
      if(exists)continue;
-     await env.DB.prepare("INSERT INTO jobs(id,title,company,location,url,description,created_at) VALUES(?,?,?,?,?,?,?)").bind(crypto.randomUUID(),title,company,location,url,description+"\n\nSource: "+feed.name+" · Open original listing for details.",new Date().toISOString()).run();
+     const id=crypto.randomUUID();
+     const profileRow=await env.DB.prepare("SELECT data FROM profile WHERE id=1").first<any>();
+     let score:number|null=null;
+     if(profileRow){
+      try{
+       const assessment=await runAI(env,"Assess candidate fit from 0 to 100. Return JSON only with score, matched, gaps and rationale. Be conservative and use only supplied candidate facts. Candidate: "+profileRow.data+" Job: "+JSON.stringify({title,company,location,description}));
+       const raw=(assessment as any).response??"{}";
+       const parsed=JSON.parse(String(raw).replace(/^```json\s*/,"").replace(/```$/,""));
+       if(Number.isFinite(Number(parsed.score)))score=Math.max(0,Math.min(100,Number(parsed.score)));
+      }catch(e){console.error("AI match failed for discovered job",url,String(e));}
+     }
+     await env.DB.prepare("INSERT INTO jobs(id,title,company,location,url,description,match_score,created_at) VALUES(?,?,?,?,?,?,?,?)").bind(id,title,company,location,url,description+"\n\nSource: "+feed.name+" · Open original listing for details.",score,new Date().toISOString()).run();
      inserted++;
     }
    }catch(e){console.error("Job feed failed",feed.name,String(e));}
