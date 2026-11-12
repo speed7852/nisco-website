@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
-import { listProfileItems, saveLegacyProfileOnly, session, submitExtraction, SYNTHETIC_PROFILE, uploadCv, type ItemDto } from "./helpers";
+import { insertItemStatement } from "../src/db/profile-items";
+import { listProfileItems, saveLegacyProfileOnly, session, submitExtraction, SYNTHETIC_PROFILE, syntheticPdf, uploadCv, type ItemDto } from "./helpers";
 
 const item = (items: ItemDto[], section: string) => items.find((entry) => entry.section === section)!;
 
@@ -111,6 +112,62 @@ describe("review decisions", () => {
     expect(result.body.rejected).toBeGreaterThan(10);
     expect(result.body.version.review.status).toBe("reviewed");
     expect((await listProfileItems(api)).items.every((entry) => entry.status === "rejected")).toBe(true);
+  });
+});
+
+describe("confirm all remaining proposals from a CV", () => {
+  type ConfirmAll = { confirmed: number; skipped: { wouldReplace: number; duplicate: number; needsEdit: number }; version: { review: { status: string } } };
+  const confirmAll = (api: Awaited<ReturnType<typeof session>>, versionId: string) =>
+    api.call<ConfirmAll>("POST", `/api/cv/versions/${versionId}/proposals/confirm`);
+
+  it("confirms every proposal as it is, fills the profile and marks the review complete", async () => {
+    const { api, versionId, items } = await withProposals();
+    const result = await confirmAll(api, versionId);
+    expect(result.status).toBe(200);
+    expect(result.body.confirmed).toBe(items.length);
+    expect(result.body.skipped).toEqual({ wouldReplace: 0, duplicate: 0, needsEdit: 0 });
+    expect(result.body.version.review.status).toBe("reviewed");
+    const after = await listProfileItems(api);
+    expect(after.items.every((entry) => entry.status === "confirmed" && !entry.userEdited)).toBe(true);
+    expect(after.items.map((entry) => entry.value)).toEqual(items.map((entry) => entry.value));
+    expect(after.missing).not.toContain("experience");
+  });
+
+  it("never replaces or duplicates a confirmed fact, and leaves those proposals for one-by-one review", async () => {
+    // Facts confirmed by hand after the upload: proposals made before them still carry the same
+    // section (name) or the same value (skill "ITIL").
+    const { api, versionId } = await withProposals();
+    await api.call("POST", "/api/profile/items", { body: { section: "name", value: { text: "Manual Synthetic Name" } } });
+    await api.call("POST", "/api/profile/items", { body: { section: "skill", value: { text: "ITIL" } } });
+
+    const result = await confirmAll(api, versionId);
+    expect(result.body.skipped).toMatchObject({ wouldReplace: 1, duplicate: 1 });
+    expect(result.body.version.review.status).toBe("in_review");
+    const after = (await listProfileItems(api)).items;
+    expect(after.filter((entry) => entry.section === "name" && entry.status === "confirmed").map((entry) => entry.value)).toEqual([{ text: "Manual Synthetic Name" }]);
+    expect(after.filter((entry) => entry.status === "proposed").map((entry) => entry.section).sort()).toEqual(["name", "skill"]);
+    expect(after.some((entry) => entry.status === "superseded")).toBe(false);
+  });
+
+  it("leaves a value that fails validation for the user to edit", async () => {
+    const { api, versionId } = await withProposals();
+    await insertItemStatement(env.DB, { section: "link", value: { text: "example.test/no-scheme" }, status: "proposed", source: "cv_extraction", sourceCvVersionId: versionId }, new Date().toISOString()).run();
+    const result = await confirmAll(api, versionId);
+    expect(result.body.skipped.needsEdit).toBe(1);
+    const left = (await listProfileItems(api)).items.filter((entry) => entry.status === "proposed");
+    expect(left.map((entry) => entry.value)).toEqual([{ text: "example.test/no-scheme" }]);
+  });
+
+  it("confirms only this CV's proposals, is idempotent, and refuses a deleted or unknown CV", async () => {
+    const { api, versionId } = await withProposals();
+    const other = await uploadCv(api, syntheticPdf(16), "Second synthetic CV.pdf");
+    expect((await confirmAll(api, versionId)).body.confirmed).toBeGreaterThan(10);
+    expect((await confirmAll(api, versionId)).body.confirmed).toBe(0);
+    const items = (await listProfileItems(api)).items;
+    expect(items.filter((entry) => entry.status === "confirmed").every((entry) => entry.source.cvVersionId === versionId)).toBe(true);
+    expect((await api.call("POST", "/api/cv/versions/00000000-0000-4000-8000-000000000000/proposals/confirm")).status).toBe(404);
+    await api.call("DELETE", `/api/cv/versions/${other.body.version.id}`, { body: { confirm: "DELETE" } });
+    expect((await confirmAll(api, other.body.version.id)).status).toBe(410);
   });
 });
 

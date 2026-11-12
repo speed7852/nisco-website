@@ -59,7 +59,8 @@ async function readCv(version, file) {
     say(`Could not read text from “${file.name}”: ${explain(extraction.warnings)}. The file is stored privately; you can add facts yourself under Confirmed profile.`, "error");
   } else {
     const partly = extraction.status === "partial" ? ` (partly: ${explain(extraction.warnings)})` : "";
-    say(`Read ${characters} characters from “${file.name}”${partly}. ${response.proposalsCreated} fact(s) proposed for your review.`);
+    const next = response.proposalsCreated > 0 ? " Use “Confirm all” under Facts awaiting your review to add them to your profile in one step, or check them one by one." : "";
+    say(`Read ${characters} characters from “${file.name}”${partly}. ${response.proposalsCreated} fact(s) proposed for your review.${next}`);
   }
 }
 

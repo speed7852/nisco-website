@@ -169,6 +169,25 @@ async function rejectProposal(item, button) {
   });
 }
 
+async function confirmRemaining(versionId, name, count, button) {
+  const ok = await confirmDialog({
+    title: "Confirm all facts from this CV?",
+    message: `The ${count} fact(s) read from “${name}” are added to your profile exactly as written in the CV. A fact that would replace or repeat one you have already confirmed, or that needs editing first, stays here for you to check. You can edit or remove any fact afterwards.`,
+    confirmLabel: "Confirm all",
+  });
+  if (!ok) return;
+  await busy(button, async () => {
+    try {
+      const result = await api(`/api/cv/versions/${versionId}/proposals/confirm`, { method: "POST" });
+      await refreshWorkspace();
+      const left = result.skipped.wouldReplace + result.skipped.duplicate + result.skipped.needsEdit;
+      say(`Confirmed ${result.confirmed} fact(s) from “${name}”.${left ? ` ${left} left below for you to check.` : ""}`);
+    } catch (error) {
+      say(error.message, "error");
+    }
+  });
+}
+
 async function rejectRemaining(versionId, name, button) {
   const ok = await confirmDialog({ title: "Reject the remaining proposals?", message: `Every proposal from “${name}” that you have not confirmed will be rejected. Confirmed facts are not affected.`, confirmLabel: "Reject remaining" });
   if (!ok) return;
@@ -237,6 +256,7 @@ function renderProposals() {
           "div",
           { class: "bar" },
           el("h4", { text: `${title} · ${items.length}` }),
+          version ? el("button", { type: "button", class: "confirm-all", text: `Confirm all ${items.length}`, "aria-label": `Confirm all ${items.length} proposals from ${version.file?.name ?? "this CV"}`, onclick: (event) => confirmRemaining(version.id, version.file?.name ?? "this CV", items.length, event.currentTarget) }) : null,
           version ? el("button", { type: "button", class: "secondary reject-all", text: "Reject all remaining", "aria-label": `Reject all remaining proposals from ${version.file?.name ?? "this CV"}`, onclick: (event) => rejectRemaining(version.id, version.file?.name ?? "this CV", event.currentTarget) }) : null,
         ),
         items.map(proposalCard),

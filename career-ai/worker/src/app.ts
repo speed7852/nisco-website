@@ -9,6 +9,7 @@ import { Router, type RequestContext } from "./http/router";
 import { createApplication, listApplicationsRoute, updateApplicationRoute } from "./routes/applications";
 import {
   activateCvVersionRoute,
+  confirmRemainingProposals,
   deactivateCvVersionRoute,
   deleteCvVersion,
   downloadCvVersion,
@@ -71,6 +72,7 @@ export const router = new Router()
   .add("POST", "/api/cv/versions/:id/extraction", submitExtraction, { auth: true, personal: true })
   .add("POST", "/api/cv/versions/:id/activate", activateCvVersionRoute, { auth: true, personal: true })
   .add("POST", "/api/cv/versions/:id/deactivate", deactivateCvVersionRoute, { auth: true, personal: true })
+  .add("POST", "/api/cv/versions/:id/proposals/confirm", confirmRemainingProposals, { auth: true, personal: true })
   .add("POST", "/api/cv/versions/:id/proposals/reject", rejectRemainingProposals, { auth: true, personal: true })
   .add("GET", "/api/profile/items", listProfileItems, { auth: true, personal: true })
   .add("POST", "/api/profile/items", createProfileItem, { auth: true, personal: true })

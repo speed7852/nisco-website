@@ -13,7 +13,7 @@ const authRoutes = router.list().filter((route) => route.auth);
 describe("single-user access to CV and profile data", () => {
   it("marks every Phase 2 CV and profile route as personal and authenticated", () => {
     const paths = personalRoutes.map((route) => `${route.method} ${route.path}`);
-    expect(paths.length).toBe(20);
+    expect(paths.length).toBe(21);
     for (const route of router.list().filter((r) => r.path.startsWith("/api/cv/") || r.path.startsWith("/api/profile/"))) {
       expect(route.personal && route.auth, `${route.method} ${route.path}`).toBe(true);
     }

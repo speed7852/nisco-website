@@ -58,6 +58,13 @@ unconfirmed proposals, the `documents` row, and turns the version into a tombsto
 are the user's decisions) and report `source.cvDeleted = true`. A file that belongs to a CV version
 cannot be deleted through `/api/files/:id` (409 `document_in_use`).
 
+**Confirm all** (`POST /api/cv/versions/:id/proposals/confirm`) confirms, as they are, the version's
+remaining proposals in one step, at the user's request. It never replaces or repeats a confirmed
+fact: a proposal for a single-value section that already has a confirmed value, a value already
+confirmed in its section, or a value that fails validation stays proposed and is reported in
+`skipped` (`wouldReplace`, `duplicate`, `needsEdit`). Updates run in D1 batches of 50 statements
+(a batch counts as one query against the per-invocation limit).
+
 ## `profile_items`
 
 One row per fact or proposal.

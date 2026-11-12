@@ -14,7 +14,7 @@ import {
   type CvVersionRow,
 } from "../db/cv-versions";
 import { getDocument } from "../db/documents";
-import { countsByCv, deleteUnconfirmedFromCvStatement } from "../db/profile-items";
+import { countsByCv, deleteUnconfirmedFromCvStatement, listItems, parseValue } from "../db/profile-items";
 import { downloadResponse, removeStoredDocument, storeUpload, validateUpload } from "../files/upload";
 import { readJson } from "../http/body";
 import { badRequest, conflict, HttpError, notFound, unsupportedMediaType } from "../http/errors";
@@ -22,6 +22,7 @@ import { json } from "../http/responses";
 import type { RequestContext } from "../http/router";
 import { FieldErrors, isUuid, readEnum, rejectUnknownKeys, requireIdParam, requireObject } from "../http/validation";
 import { insertProposalsDeduplicated } from "../profile/proposals";
+import { comparableValue, isSingleValue, validateItemValue, type ProfileSection } from "../profile/schema";
 import { structureCvText, STRUCTURER_VERSION } from "../profile/structure";
 
 /**
@@ -262,6 +263,71 @@ export async function rejectRemainingProposals({ env, params }: RequestContext):
     .run();
   await setReviewStatus(env.DB, row.id, "reviewed", now);
   return json({ ok: true, rejected: result.meta.changes ?? 0, version: await dto(env.DB, row.id) });
+}
+
+/**
+ * POST /api/cv/versions/:id/proposals/confirm: confirms, as they are, every remaining proposal from
+ * this CV in one step (the user's explicit request from "Confirm all").
+ *
+ * It never replaces or duplicates a confirmed fact. A proposal stays proposed, for the user to
+ * decide one by one, when its single-value section already has a confirmed value ("wouldReplace"),
+ * when the same value is already confirmed in its section ("duplicate"), or when the value does not
+ * pass validation and must be edited first ("needsEdit"). Among this CV's own proposals, the first
+ * one for a single-value section wins.
+ */
+export async function confirmRemainingProposals({ env, params }: RequestContext): Promise<Response> {
+  const row = await requireVersion(env.DB, params.id);
+  requireLive(row);
+  const now = new Date().toISOString();
+  const items = await listItems(env.DB, { statuses: ["confirmed", "proposed"] });
+
+  const filledSingle = new Set<ProfileSection>();
+  const confirmedValues = new Set<string>();
+  for (const item of items) {
+    if (item.status !== "confirmed") continue;
+    if (isSingleValue(item.section)) filledSingle.add(item.section);
+    else confirmedValues.add(`${item.section}|${comparableValue(parseValue(item))}`);
+  }
+
+  const toConfirm: string[] = [];
+  const skipped = { wouldReplace: 0, duplicate: 0, needsEdit: 0 };
+  for (const item of items) {
+    if (item.status !== "proposed" || item.source_cv_version_id !== row.id) continue;
+    let key: string;
+    try {
+      key = `${item.section}|${comparableValue(validateItemValue(item.section, parseValue(item)))}`;
+    } catch (error) {
+      if (!(error instanceof HttpError)) throw error;
+      skipped.needsEdit += 1;
+      continue;
+    }
+    if (isSingleValue(item.section)) {
+      if (filledSingle.has(item.section)) {
+        skipped.wouldReplace += 1;
+        continue;
+      }
+      filledSingle.add(item.section);
+    } else {
+      if (confirmedValues.has(key)) {
+        skipped.duplicate += 1;
+        continue;
+      }
+      confirmedValues.add(key);
+    }
+    toConfirm.push(item.id);
+  }
+
+  // Guarded on status, so an item changed by another request in the meantime is left alone.
+  const statements = toConfirm.map((id) =>
+    env.DB.prepare("UPDATE profile_items SET status = 'confirmed', decided_at = ?, updated_at = ? WHERE id = ? AND status = 'proposed'").bind(now, now, id),
+  );
+  let confirmed = 0;
+  // A D1 batch counts as one query against the per-invocation limit; 50 statements per batch.
+  for (let i = 0; i < statements.length; i += 50) {
+    for (const result of await env.DB.batch(statements.slice(i, i + 50))) confirmed += result.meta.changes ?? 0;
+  }
+  await setReviewStatus(env.DB, row.id, reviewStatus(row, (await countsByCv(env.DB)).get(row.id)), now);
+  return json({ ok: true, confirmed, skipped, version: await dto(env.DB, row.id) });
 }
 
 /**
