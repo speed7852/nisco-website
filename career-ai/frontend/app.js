@@ -155,11 +155,19 @@
 
   async function showApp() {
     $("login").hidden = true;
-    $("app").hidden = false;
+    const app = $("app");
+    app.hidden = false;
+    // Until the saved data is on screen the workspace is busy and inert, so nothing typed or
+    // clicked in the meantime can be overwritten by the load finishing later.
+    app.setAttribute("aria-busy", "true");
+    app.inert = true;
     try {
       await loadAll();
     } catch (error) {
       if (error.status !== 401) say(error.message, "error");
+    } finally {
+      app.inert = false;
+      app.setAttribute("aria-busy", "false");
     }
   }
 
@@ -205,7 +213,10 @@
 
   // ---- Loading -------------------------------------------------------------------------------------
 
+  let loadGeneration = 0;
+
   async function loadAll() {
+    const generation = (loadGeneration += 1);
     const [profile, jobs, applications, files, runs] = await Promise.all([
       api("/api/profile"),
       api("/api/jobs"),
@@ -213,6 +224,8 @@
       api("/api/files"),
       api("/api/discovery/runs?limit=1"),
     ]);
+    // A newer load started while this one was in flight: its data is fresher, so drop this one.
+    if (generation !== loadGeneration) return;
     fillProfile(profile.profile, profile.updatedAt);
     state.jobs = jobs.jobs || [];
     state.applications = applications.applications || [];
