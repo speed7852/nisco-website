@@ -2,6 +2,14 @@ name = "nisco-career-ai-api"
 main = "src/index.ts"
 compatibility_date = "2026-11-12"
 workers_dev = true
-
 [vars]
 APP_NAME = "NISCO Career AI"
+[ai]
+binding = "AI"
+[[d1_databases]]
+binding = "DB"
+database_name = "nisco-career-ai-db"
+[[r2_buckets]]
+binding = "PRIVATE_FILES"
+[triggers]
+crons = ["0 3 * * *", "0 15 * * *"]
