@@ -21,7 +21,7 @@ describe("fixed-rule CV structuring", () => {
     expect(bySection(proposals, "years_experience")).toEqual([{ text: "12" }]);
   });
 
-  it("fills role and employer only for 'Role at Employer' and keeps dates as written", () => {
+  it("fills role and employer for 'Role at Employer' and 'Title | Employer', keeping dates as written", () => {
     const [first, second] = bySection(proposals, "experience");
     expect(first).toEqual({
       heading: "Senior Programme Manager at Example Holdings",
@@ -31,8 +31,14 @@ describe("fixed-rule CV structuring", () => {
       end: "Present",
       achievements: ["Led a synthetic PMO of 5 people.", "Ran ITIL service transition for a fictional bank."],
     });
-    expect(second).toEqual({ heading: "Project Manager | Fictional Bank", start: "2016", end: "2019", achievements: ["Delivered a synthetic core-banking upgrade."] });
-    expect(second).not.toHaveProperty("employer");
+    expect(second).toEqual({
+      heading: "Project Manager | Fictional Bank",
+      role: "Project Manager",
+      employer: "Fictional Bank",
+      start: "2016",
+      end: "2019",
+      achievements: ["Delivered a synthetic core-banking upgrade."],
+    });
   });
 
   it("proposes education, certifications and skills", () => {
@@ -69,6 +75,117 @@ describe("fixed-rule CV structuring", () => {
   it("returns nothing for empty or heading-only text", () => {
     expect(structureCvText("")).toEqual([]);
     expect(structureCvText("SKILLS\nEXPERIENCE\n")).toEqual([]);
+  });
+});
+
+/**
+ * A synthetic CV in a common Word layout: the title on its own line, then "Employer | Location |
+ * Dates", and bullets written as a Word list, so the extracted text carries no bullet characters.
+ * Every name, place and number is invented.
+ */
+const WORD_LIST_CV = [
+  "Riley Placeholder",
+  "PMO Manager | Delivery Manager",
+  "Example City, Example Country (synthetic) | +966 50 000 0000 | riley@example.test",
+  "Professional Summary",
+  "Synthetic summary for automated tests only. 9+ years in delivery.",
+  "Core Skills",
+  "Program & PMO: PMO Governance, Risk Management, WBS",
+  "Tools & Platforms: Example BI, Example ERP",
+  "Professional Experience",
+  "Project Consultant (Freelance)",
+  "Example Marketplace | Remote | Jan 2026 – Present",
+  "Set up synthetic governance for fictional clients.",
+  "Manage fictional client communication, scope and expectations remotely to deliver on time.",
+  "PMO Lead",
+  "Example Services Holdings | Example City, Example Country | May 2017 – Jul 2021",
+  "Provided synthetic PMO governance and financial management across fictional programmes.",
+  "Ran a placeholder portfolio review.",
+  "Education",
+  "Bachelor of Commerce, Example University, Example Country, 2009",
+].join("\n");
+
+describe("CVs written as Word lists with 'Title' above 'Employer | Location | Dates'", () => {
+  const proposals = structureCvText(WORD_LIST_CV);
+
+  it("fills title, employer and location, and keeps every bullet with its own entry", () => {
+    expect(bySection(proposals, "experience")).toEqual([
+      {
+        heading: "Project Consultant (Freelance)",
+        role: "Project Consultant (Freelance)",
+        employer: "Example Marketplace",
+        location: "Remote",
+        start: "Jan 2026",
+        end: "Present",
+        achievements: [
+          "Set up synthetic governance for fictional clients.",
+          "Manage fictional client communication, scope and expectations remotely to deliver on time.",
+        ],
+      },
+      {
+        heading: "PMO Lead",
+        role: "PMO Lead",
+        employer: "Example Services Holdings",
+        location: "Example City, Example Country",
+        start: "May 2017",
+        end: "Jul 2021",
+        achievements: ["Provided synthetic PMO governance and financial management across fictional programmes.", "Ran a placeholder portfolio review."],
+      },
+    ]);
+  });
+
+  it("proposes the current location from the contact line, never the email, phone or name", () => {
+    expect(bySection(proposals, "location_text")).toEqual([{ text: "Example City, Example Country (synthetic)" }]);
+  });
+
+  it("drops the category label from skills written as 'Category: a, b, c'", () => {
+    expect(bySection(proposals, "skill").map((value) => value.text)).toEqual(["PMO Governance", "Risk Management", "WBS", "Example BI", "Example ERP"]);
+  });
+
+  it("splits 'Qualification, Institution, Country, Year' into its parts", () => {
+    expect(bySection(proposals, "education")).toEqual([
+      {
+        heading: "Bachelor of Commerce, Example University, Example Country, 2009",
+        qualification: "Bachelor of Commerce",
+        institution: "Example University",
+        end: "2009",
+      },
+    ]);
+  });
+
+  it("keeps every proposal grounded", () => {
+    for (const proposal of proposals) expect(isGrounded(WORD_LIST_CV, proposal), proposal.section).toBe(true);
+  });
+});
+
+describe("role and employer are left for the user when the reading is ambiguous", () => {
+  const experience = (text: string) => bySection(structureCvText(`Sam Example\nEXPERIENCE\n${text}`), "experience");
+
+  it("both sides look like titles, or neither does", () => {
+    expect(experience("Lead Analyst\nManager Example Group | 2018 - 2020")[0]).toEqual({ heading: "Lead Analyst", start: "2018", end: "2020" });
+    expect(experience("Example Group\nExample Holdings | 2018 - 2020")[0]).toEqual({ heading: "Example Group", start: "2018", end: "2020" });
+  });
+
+  it("reads 'Employer' above 'Title' above a date line", () => {
+    expect(experience("Example Holdings\nSenior Programme Manager\n2018 - 2020")[0]).toEqual({
+      heading: "Example Holdings\nSenior Programme Manager",
+      role: "Senior Programme Manager",
+      employer: "Example Holdings",
+      start: "2018",
+      end: "2020",
+    });
+  });
+
+  it("never takes a full sentence above a date line as a header", () => {
+    const [first, second] = experience(
+      "Analyst at Example Bank\n2015 - 2017\nPrepared fictional weekly reports for a synthetic leadership team.\nConsultant at Example Advisory\n2017 - 2019",
+    );
+    expect(first).toMatchObject({ role: "Analyst", employer: "Example Bank", achievements: ["Prepared fictional weekly reports for a synthetic leadership team."] });
+    expect(second).toMatchObject({ heading: "Consultant at Example Advisory", role: "Consultant", employer: "Example Advisory" });
+  });
+
+  it("does not read a year range or an experience line as a contact location", () => {
+    expect(bySection(structureCvText("Sam Example\nExample Holdings | 2018 - 2020\nEXPERIENCE\nAnalyst | 2018 - 2020"), "location_text")).toEqual([]);
   });
 });
 

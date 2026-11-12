@@ -135,10 +135,25 @@ Immutable copies of the Phase 1 `profile` row: an `UPDATE` trigger aborts any ch
 
 ## CV structuring rules (no AI)
 
-`worker/src/profile/structure.ts` (`STRUCTURER_VERSION = "rules-1.0.0"`) turns extracted text into
+`worker/src/profile/structure.ts` (`STRUCTURER_VERSION = "rules-1.1.0"`) turns extracted text into
 proposals with fixed rules: contact details from the first lines, sections by known headings
 (summary, experience, education, certifications, skills), experience entries anchored on date-range
 lines, skills split on `, ; | •`. It never proposes preferences (titles, locations, remote).
+
+Rules added in 1.1.0, for CVs written in Word with list bullets (no bullet characters in the text):
+
+- **Experience:** "Title" on its own line above "Employer | Location | Dates" (or "Title | Employer |
+  Dates" on one line) fills role, employer and location, but only when exactly one of the two names
+  contains a job-title word (Manager, Lead, Consultant, ...). Two titles or none stay unassigned,
+  with the verbatim heading kept. A sentence-like line (8+ words ending in a full stop, or over 120
+  characters) is never taken as a header, so each entry keeps its own last bullet.
+- **Current location:** the part of a pipe-separated contact line above the first section heading
+  that is not the email, a phone number, a link or the name.
+- **Skills:** a "Category: a, b, c" line drops the category label.
+- **Education:** "Qualification, Institution, Country, Year" is split into qualification and
+  institution.
+
+**Read again** on a CV version already uploaded reads its file again and applies the current rules.
 
 **Grounding invariant:** every string in every proposed value is an exact substring of the extracted
 text inside the recorded span (`isGrounded`, enforced before insert and fuzz-tested with 400
