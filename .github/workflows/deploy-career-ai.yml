@@ -22,6 +22,13 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Create Career AI Pages project if needed
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create nisco-career-ai --production-branch main
+
       - name: Deploy Career AI Worker
         uses: cloudflare/wrangler-action@v3
         with:
@@ -29,9 +36,9 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --config career-ai/worker/wrangler.toml
 
-      - name: Deploy Career AI Pages frontend
+      - name: Deploy Career AI Pages preview
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy career-ai/frontend --project-name nisco-career-ai --branch main
+          command: pages deploy career-ai/frontend --project-name nisco-career-ai --branch career-ai-deploy
