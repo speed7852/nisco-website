@@ -27,6 +27,21 @@ logs, and keeps unauthenticated traffic away from the Worker. Access is free for
 `test/access-jwt.test.ts` covers valid tokens, wrong audience/issuer, expiry, not-before, a foreign
 signing key, `alg: none` and HS256, unknown `kid`, tampered payloads and the allow-list.
 
+## Single-user owner identity (Phase 2)
+
+Career AI has exactly one user. The CV and profile-fact routes (marked `personal` in
+`worker/src/app.ts`) add a second check after authentication, `requireOwnerIdentity`:
+
+- key mode: whoever holds the access key is the owner (unchanged);
+- Access mode: `ACCESS_ALLOWED_EMAILS` **must** be set to the owner's email. If it is empty these
+  routes return 503 `owner_not_configured` instead of trusting any identity the Access policy lets
+  through; an email not on the list gets 403. `test/phase2-access.test.ts` checks every personal
+  route for the owner (allowed), another identity (403) and an empty list (503).
+
+The Phase 1 routes (`/api/profile`, `/api/files`, jobs, applications, drafts) keep their Phase 1
+behaviour: authentication plus the optional allow-list. Set `ACCESS_ALLOWED_EMAILS` before enabling
+Access so both behave the same.
+
 ## The cross-origin problem, and the recommended topology
 
 Today the app is on `*.pages.dev` and the API on `*.workers.dev`. These are different sites. Access
@@ -38,7 +53,7 @@ sets its cookie per hostname, and browsers increasingly block cross-site cookies
 one Access application protects the Pages hostname. Access then injects `Cf-Access-Jwt-Assertion` on
 every request, the function passes it on, and the Worker verifies it. No CORS is needed, and the Worker's
 public `workers.dev` route can be turned off. This changes the Pages deployment (functions directory
-and a service binding), so it is a separate, reviewed change and is **not** part of Phase 0/1.
+and a service binding), so it is a separate, reviewed change and is **not** part of Phase 0/1 or Phase 2.
 
 ## Steps to enable (after the same-origin change)
 
