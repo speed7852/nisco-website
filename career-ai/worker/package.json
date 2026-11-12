@@ -1,0 +1,25 @@
+{
+  "name": "nisco-career-ai-worker",
+  "version": "0.2.0",
+  "private": true,
+  "description": "NISCO Career AI API: Cloudflare Worker with D1, private R2 and Workers AI.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm test",
+    "dev": "wrangler dev",
+    "db:migrate:local": "wrangler d1 migrations apply nisco-career-ai-db --local"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.8.0",
+    "@cloudflare/workers-types": "5.20261110.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.12",
+    "wrangler": "4.160.1"
+  }
+}

@@ -2,14 +2,57 @@ name = "nisco-career-ai-api"
 main = "src/index.ts"
 compatibility_date = "2026-11-12"
 workers_dev = true
+
 [vars]
 APP_NAME = "NISCO Career AI"
+# "key"    = private access key exchanged for a short-lived signed session token (current production mode).
+# "access" = Cloudflare Access JWT required on every API request. See ../docs/ACCESS.md before switching.
+AUTH_MODE = "key"
+# Exact browser origins allowed to call the API. No wildcards.
+ALLOWED_ORIGINS = "https://nisco-career-ai.pages.dev,https://career-ai-deploy.nisco-career-ai.pages.dev"
+SESSION_TTL_SECONDS = "28800"
+# Used only when AUTH_MODE = "access". Team domain looks like https://<team>.cloudflareaccess.com
+ACCESS_TEAM_DOMAIN = ""
+ACCESS_AUD = ""
+# Optional comma-separated email allow-list checked after the Access JWT is verified.
+ACCESS_ALLOWED_EMAILS = ""
+
+[observability]
+enabled = true
+
 [ai]
 binding = "AI"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "nisco-career-ai-db"
+migrations_dir = "migrations"
+# database_id is looked up by name during deployment (never created there).
+# See ../docs/DEPLOYMENT.md, "D1 database ID", to commit it here instead.
+
 [[r2_buckets]]
 binding = "PRIVATE_FILES"
+bucket_name = "nisco-career-ai-private"
+
+# Workers Rate Limiting (available on the Free plan). Counters are per Cloudflare location
+# and eventually consistent: a second layer behind authentication, not the primary control.
+# namespace_id values must not be reused by other Workers in the account (nisco-ai uses 2026111001-2).
+[[ratelimits]]
+name = "API_RATE_LIMITER"
+namespace_id = "2026111201"
+
+  [ratelimits.simple]
+  limit = 120
+  period = 60
+
+[[ratelimits]]
+name = "AUTH_RATE_LIMITER"
+namespace_id = "2026111202"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
 [triggers]
+# 03:00 and 15:00 UTC = 06:00 and 18:00 in Riyadh.
 crons = ["0 3 * * *", "0 15 * * *"]
