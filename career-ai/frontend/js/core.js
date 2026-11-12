@@ -35,7 +35,9 @@ export function el(tag, attributes = {}, ...children) {
     else if (name.startsWith("on")) node.addEventListener(name.slice(2), value);
     else node.setAttribute(name, value === true ? "" : String(value));
   }
-  for (const child of children.flat()) if (child !== null && child !== undefined && child !== false) node.append(child);
+  // Flatten fully: children may be nested lists (for example [dt, dd] pairs); appending an array would
+  // render its string form.
+  for (const child of children.flat(Infinity)) if (child !== null && child !== undefined && child !== false) node.append(child);
   return node;
 }
 
