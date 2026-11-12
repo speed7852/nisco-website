@@ -157,6 +157,11 @@ test("M05 every proposal is grounded in the extracted text and shows where it ca
   }
   await expect(proposal("email")).toContainText("As written in the CV:");
   await expect(proposal("email")).toContainText(`From CV “${PDF_NAME}”`);
+  // Values with several fields render as labelled text, never as "[object HTMLElement]".
+  await expect(page.locator("#proposals")).not.toContainText("[object");
+  await expect(proposal("certification").first()).toContainText("Synthetic Institute");
+  await expect(proposal("experience").first()).toContainText("Example Holdings");
+  await expect(proposal("education").first()).toContainText("Example University");
   await expect(proposal("name")).toContainText("Already confirmed: “Manual Synthetic Name”");
 });
 
@@ -304,6 +309,7 @@ test("M19b Confirm all adds a CV's proposals in one step and never replaces a co
   const stillProposed = after.filter((item) => item.source.cvVersionId === earlier.id && item.status === "proposed").map((item) => item.id).sort();
   expect(stillProposed).toEqual(expectedLeft.map((item) => item.id).sort());
   await expect(group.locator("article.proposal")).toHaveCount(expectedLeft.length);
+  await expect(page.locator("#facts")).not.toContainText("[object");
 });
 
 test("M20 without a session the CV, profile and export endpoints refuse access", async () => {
