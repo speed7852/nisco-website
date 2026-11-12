@@ -26,7 +26,8 @@ import { comparableValue, isSingleValue, PROFILE_SECTIONS, requireSection, SECTI
 
 /**
  * The structured candidate profile. Facts become confirmed only through an explicit request from
- * the user: adding a fact manually, or confirming a proposal. A single-value section never has its
+ * the user: adding a fact manually, confirming a proposal, or "Confirm all" for one CV
+ * (`confirmRemainingProposals` in routes/cv.ts, which never replaces a confirmed fact). A single-value section never has its
  * confirmed value replaced without `replaceConfirmed: true`.
  */
 

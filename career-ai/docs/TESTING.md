@@ -101,7 +101,7 @@ The GitHub Actions results for the same commit are linked from the pull request.
 | Extraction result validation (statuses, warning codes, parser per type, size limits, normalisation) | `cv.test.ts` |
 | Browser extraction: PDF (pdf.js under the production CSP), DOCX, scanned PDF, hostile DOCX (zip bomb, DTD, encryption, ZIP64) | `e2e/unit/*.test.js`, journey M04, M11, M15, M25 |
 | Structuring is grounded (no invented values) | `unit/structure.test.ts` (incl. 400-document fuzz), journey M05 |
-| Review: confirm, edit before confirming, reject, reject remaining, replace a confirmed value only explicitly | `profile-items.test.ts`, `cv.test.ts`, journey M06-M09, M18 |
+| Review: confirm, edit before confirming, reject, reject remaining, confirm all (never replaces or repeats a confirmed fact), replace a confirmed value only explicitly | `profile-items.test.ts`, `cv.test.ts`, journey M06-M09, M18, M19b |
 | Statuses and provenance (`proposed`/`confirmed`/`rejected`/`superseded`; source CV, snapshot, span) | `profile-items.test.ts`, `cv.test.ts`, journey M05-M08, M22 |
 | Versioning: one active version, activate/deactivate, re-read, register an earlier upload | `cv.test.ts`, journey M10, M12, M19 |
 | Matching, drafts and discovery use confirmed facts only | `confirmed-only.test.ts`, journey 07b, 12, 13 |
@@ -282,6 +282,7 @@ their assertions are unchanged.
 | M17 | Extracted text viewable in the page |
 | M18 | Remaining proposals from one CV rejected together |
 | M19 | Earlier private upload registered as a CV version and read; its file can no longer be deleted from the file list |
+| M19b | Confirm all adds a CV's proposals in one step; confirmed facts are never replaced or superseded, and the proposals that would replace one stay for review |
 | M20 | Without a session (or with a forged token) the CV, profile and export endpoints return 401 |
 | M21 | Export contains profile and document metadata, no storage keys, access key or session token |
 | M22 | Delete CV needs the typed phrase; file and records removed (download 410); confirmed facts kept and marked |

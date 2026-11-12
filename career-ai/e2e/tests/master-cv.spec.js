@@ -282,6 +282,30 @@ test("M19 an earlier private upload is registered as a CV version and read", asy
   await expect(row.locator("button.danger")).toHaveCount(0);
 });
 
+test("M19b Confirm all adds a CV's proposals in one step and never replaces a confirmed fact", async () => {
+  const SINGLE = ["name", "headline", "summary", "years_experience", "email", "phone", "location_text", "remote_preference", "skills_text", "experience_text", "preferred_titles_text"];
+  const earlier = (await apiGet("/api/cv/versions")).versions.find((v) => v.file?.name === "Earlier synthetic.docx");
+  const all = await items();
+  const before = all.filter((item) => item.source.cvVersionId === earlier.id && item.status === "proposed");
+  const confirmedBefore = all.filter((item) => item.status === "confirmed");
+  const expectedLeft = before.filter((item) => SINGLE.includes(item.section) && confirmedBefore.some((fact) => fact.section === item.section));
+  expect(before.length).toBeGreaterThan(expectedLeft.length);
+
+  const group = page.locator(`#proposals [data-source="cv:${earlier.id}"]`);
+  await group.getByRole("button", { name: `Confirm all ${before.length} proposals from Earlier synthetic.docx` }).click();
+  await expect(page.locator("#confirm-dialog")).toContainText("exactly as written in the CV");
+  const confirmed = before.length - expectedLeft.length;
+  const left = expectedLeft.length ? ` ${expectedLeft.length} left below for you to check.` : "";
+  await expectMessage(() => page.click("#confirm-ok"), `Confirmed ${confirmed} fact(s) from “Earlier synthetic.docx”.${left}`);
+
+  const after = await items();
+  for (const fact of confirmedBefore) expect(after.find((item) => item.id === fact.id)).toMatchObject({ status: "confirmed", value: fact.value });
+  expect(after.filter((item) => item.status === "superseded").length).toBe(all.filter((item) => item.status === "superseded").length);
+  const stillProposed = after.filter((item) => item.source.cvVersionId === earlier.id && item.status === "proposed").map((item) => item.id).sort();
+  expect(stillProposed).toEqual(expectedLeft.map((item) => item.id).sort());
+  await expect(group.locator("article.proposal")).toHaveCount(expectedLeft.length);
+});
+
 test("M20 without a session the CV, profile and export endpoints refuse access", async () => {
   const { versions } = await apiGet("/api/cv/versions");
   for (const pathname of ["/api/cv/versions", `/api/cv/versions/${versions[0].id}/download`, `/api/cv/versions/${versions[0].id}/text`, "/api/profile/items", "/api/profile/export"]) {
