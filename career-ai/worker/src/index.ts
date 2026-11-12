@@ -6,7 +6,7 @@ export default {
  async fetch(req:Request,env:Env){
   const u=new URL(req.url),origin=req.headers.get("origin"),ch=cors(origin);
   if(req.method==="OPTIONS")return new Response(null,{status:204,headers:ch});
-  if(u.pathname==="/health")return out({ok:true,service:env.APP_NAME,phase:"career-ai-api",authConfigured:!!env.APP_ACCESS_KEY},{ } as any,ch);
+  if(u.pathname==="/health")return out({ok:true,service:env.APP_NAME,phase:"career-ai-api",authConfigured:!!env.APP_ACCESS_KEY},200,ch);
   if(!env.APP_ACCESS_KEY)return out({error:"setup_required",message:"Configure APP_ACCESS_KEY Worker secret."},503,ch);
   if(req.headers.get("authorization")!==`Bearer ${env.APP_ACCESS_KEY}`)return out({error:"unauthorized"},401,ch);
   try{
