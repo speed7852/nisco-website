@@ -45,8 +45,13 @@ jobs:
           fi
           test -n "$DB_ID" || { echo "D1 database ID not found"; exit 1; }
           echo "Ensuring private Career AI R2 bucket exists"
-          if ! npx wrangler r2 bucket list --json | jq -e '.[] | select(.name=="nisco-career-ai-private")' >/dev/null; then
+          R2_BUCKETS="$(npx wrangler r2 bucket list)"
+          printf '%s\n' "$R2_BUCKETS"
+          if ! printf '%s\n' "$R2_BUCKETS" | grep -Fq 'nisco-career-ai-private'; then
+            echo "Creating private Career AI R2 bucket"
             npx wrangler r2 bucket create nisco-career-ai-private
+          else
+            echo "Private Career AI R2 bucket already exists"
           fi
           sed -i '/database_name = "nisco-career-ai-db"/a database_id = "'"${DB_ID}"'"' career-ai/worker/wrangler.toml
           sed -i '/binding = "PRIVATE_FILES"/a bucket_name = "nisco-career-ai-private"' career-ai/worker/wrangler.toml
