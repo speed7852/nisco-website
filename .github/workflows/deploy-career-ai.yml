@@ -2,6 +2,12 @@ name: Deploy NISCO Career AI
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - career-ai-deploy
+    paths:
+      - "career-ai/**"
+      - ".github/workflows/deploy-career-ai.yml"
 
 permissions:
   contents: read
