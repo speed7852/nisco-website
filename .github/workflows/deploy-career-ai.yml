@@ -1,5 +1,12 @@
 name: Deploy NISCO Career AI
 
+# Production deployment of the Career AI Worker, D1 migrations and Pages app.
+# Safeguards (see career-ai/docs/DEPLOYMENT.md):
+# - deploys only from career-ai-deploy, and only after the test workflow passes;
+# - runs in the "career-ai-production" GitHub Environment (configure required reviewers there);
+# - never cancels a deployment in progress;
+# - uses the Wrangler version pinned in career-ai/worker/package-lock.json;
+# - never creates Cloudflare resources: a missing D1 database or R2 bucket stops the run.
 on:
   workflow_dispatch:
   push:
@@ -8,74 +15,95 @@ on:
     paths:
       - "career-ai/**"
       - ".github/workflows/deploy-career-ai.yml"
+      - ".github/workflows/test-career-ai.yml"
 
 permissions:
   contents: read
 
+# A deployment may be between applying a migration and deploying code. Queue, never cancel.
 concurrency:
   group: nisco-career-ai-deploy
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
+  checks:
+    name: Typecheck and tests
+    uses: ./.github/workflows/test-career-ai.yml
+
   deploy:
+    name: Deploy to Cloudflare
+    needs: checks
+    # A manual dispatch from any other branch runs the checks but never deploys.
+    if: github.ref == 'refs/heads/career-ai-deploy'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: career-ai-production
+      url: https://career-ai-deploy.nisco-career-ai.pages.dev
+    defaults:
+      run:
+        working-directory: career-ai/worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: career-ai/worker/package-lock.json
 
-      - name: Provision private D1 and R2 resources and deploy Worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm install --no-save wrangler@4
-          echo "Finding Career AI D1 database"
-          DB_ID=$(npx wrangler d1 list --json | jq -r '.[] | select(.name=="nisco-career-ai-db") | .uuid' | head -1)
-          if [ -z "$DB_ID" ]; then
-            echo "Creating Career AI D1 database"
-            npx wrangler d1 create nisco-career-ai-db
-            DB_ID=$(npx wrangler d1 list --json | jq -r '.[] | select(.name=="nisco-career-ai-db") | .uuid' | head -1)
-          fi
-          test -n "$DB_ID" || { echo "D1 database ID not found"; exit 1; }
-          echo "Ensuring private Career AI R2 bucket exists"
-          R2_BUCKETS="$(npx wrangler r2 bucket list)"
-          printf '%s\n' "$R2_BUCKETS"
-          if ! printf '%s\n' "$R2_BUCKETS" | grep -Fq 'nisco-career-ai-private'; then
-            echo "Creating private Career AI R2 bucket"
-            npx wrangler r2 bucket create nisco-career-ai-private
-          else
-            echo "Private Career AI R2 bucket already exists"
-          fi
-          sed -i '/database_name = "nisco-career-ai-db"/a database_id = "'"${DB_ID}"'"' career-ai/worker/wrangler.toml
-          sed -i '/binding = "PRIVATE_FILES"/a bucket_name = "nisco-career-ai-private"' career-ai/worker/wrangler.toml
-          npx wrangler d1 migrations apply nisco-career-ai-db --remote --config career-ai/worker/wrangler.toml
-          npx wrangler deploy --config career-ai/worker/wrangler.toml
+      - name: Install pinned Wrangler
+        run: npm ci --no-audit --no-fund
 
-      - name: Configure private application access key
+      - name: Check required secrets before changing anything
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CAREER_AI_ACCESS_KEY: ${{ secrets.CAREER_AI_ACCESS_KEY }}
-        shell: bash
         run: |
           set -euo pipefail
-          if [ -z "${CAREER_AI_ACCESS_KEY:-}" ]; then
-            echo "CAREER_AI_ACCESS_KEY GitHub Actions secret is missing."
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CAREER_AI_ACCESS_KEY; do
+            if [ -z "${!name:-}" ]; then echo "::error::GitHub Actions secret $name is missing."; exit 1; fi
+          done
+
+      - name: Resolve the existing D1 database (never creates one)
+        run: |
+          set -euo pipefail
+          ids=$(npx wrangler d1 list --json | jq -r '.[] | select(.name == "nisco-career-ai-db") | .uuid')
+          count=$(printf '%s\n' "$ids" | grep -c . || true)
+          if [ "$count" -ne 1 ]; then
+            echo "::error::Expected exactly one D1 database named nisco-career-ai-db, found $count. Nothing was created."
             exit 1
           fi
-          printf '%s' "$CAREER_AI_ACCESS_KEY" | npx wrangler secret put APP_ACCESS_KEY --config career-ai/worker/wrangler.toml
+          echo "Using D1 database $ids"
+          # The ID is an identifier, not a secret. Commit it to wrangler.toml to remove this step.
+          sed -i '/^database_name = "nisco-career-ai-db"$/a database_id = "'"$ids"'"' wrangler.toml
+          grep -q "^database_id = \"$ids\"$" wrangler.toml
 
+      - name: Check the private R2 bucket exists (never creates one)
+        run: |
+          set -euo pipefail
+          if ! npx wrangler r2 bucket list | grep -Eq '^name:[[:space:]]+nisco-career-ai-private$'; then
+            echo "::error::R2 bucket nisco-career-ai-private was not found. Nothing was created."
+            exit 1
+          fi
 
-      - name: Deploy Career AI Pages preview
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy career-ai/frontend --project-name nisco-career-ai --branch career-ai-deploy
+      - name: Apply pending D1 migrations
+        run: npx wrangler d1 migrations apply nisco-career-ai-db --remote
+
+      - name: Deploy Worker
+        run: npx wrangler deploy
+
+      - name: Set the private access key secret
+        env:
+          CAREER_AI_ACCESS_KEY: ${{ secrets.CAREER_AI_ACCESS_KEY }}
+        run: printf '%s' "$CAREER_AI_ACCESS_KEY" | npx wrangler secret put APP_ACCESS_KEY
+
+      - name: Deploy Pages app
+        working-directory: .
+        run: ./career-ai/worker/node_modules/.bin/wrangler pages deploy career-ai/frontend --project-name nisco-career-ai --branch career-ai-deploy --commit-dirty=true

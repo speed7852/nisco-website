@@ -1,0 +1,65 @@
+name: Test NISCO Career AI
+
+# Checks only: no secrets, no Cloudflare access, no deployment.
+# Runs on pull requests into career-ai-deploy, on pushes to Career AI feature branches, and is
+# called by deploy-career-ai.yml so a deployment cannot start before these checks pass.
+on:
+  pull_request:
+    branches:
+      - career-ai-deploy
+    paths:
+      - "career-ai/**"
+      - ".github/workflows/test-career-ai.yml"
+      - ".github/workflows/deploy-career-ai.yml"
+  push:
+    branches:
+      - "career-ai-phase-*"
+    paths:
+      - "career-ai/**"
+      - ".github/workflows/test-career-ai.yml"
+      - ".github/workflows/deploy-career-ai.yml"
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Typecheck and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: career-ai/worker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: career-ai/worker/package-lock.json
+
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Strict TypeScript check
+        run: npm run typecheck
+
+      - name: Worker tests (local D1/R2, stubbed Workers AI)
+        run: npm test
+
+      - name: Frontend script syntax
+        working-directory: career-ai/frontend
+        run: |
+          node --check app.js
+          node --check config.js
+
+      - name: No personal documents or credentials committed
+        working-directory: .
+        run: bash career-ai/scripts/check-repo-hygiene.sh
