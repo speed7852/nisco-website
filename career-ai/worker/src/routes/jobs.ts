@@ -1,7 +1,7 @@
 import { assessJob } from "../ai/matching";
 import { findJobIdByCanonicalUrl, getJob, insertJob, listJobs, toJobDto } from "../db/jobs";
-import { getProfile } from "../db/profile";
 import { profileHasFacts } from "../domain/profile";
+import { getConfirmedProfile } from "../profile/confirmed";
 import { normaliseJobUrl } from "../domain/urls";
 import { readJson } from "../http/body";
 import { conflict, notFound } from "../http/errors";
@@ -79,9 +79,9 @@ export async function createJob({ request, env }: RequestContext): Promise<Respo
 export async function matchJob({ env, params }: RequestContext): Promise<Response> {
   const job = await getJob(env.DB, requireIdParam(params.id));
   if (!job) throw notFound("Job");
-  const stored = await getProfile(env.DB);
+  const stored = await getConfirmedProfile(env.DB);
   if (!stored || !profileHasFacts(stored.profile)) {
-    throw conflict("profile_required", "Save your career profile (headline, summary, skills or experience) before assessing jobs.");
+    throw conflict("profile_required", "Confirm your profile facts (headline, summary, skills or experience) before assessing jobs. Only confirmed facts are used.");
   }
   const outcome = await assessJob(env, job, stored.profile);
   return json({

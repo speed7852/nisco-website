@@ -7,6 +7,11 @@
 // 3. No credentials: Cloudflare token/account variables are removed from the environment, and HOME
 //    and XDG_CONFIG_HOME point at the temporary directory, so a stored `wrangler login` is invisible.
 // 4. `wrangler dev --local`: remote bindings disabled. The generated config contains no database_id.
+// 5. The API rate limit is raised from 120 to 1200 requests a minute (the sign-in limit stays at 10).
+//    The two journeys perform about 75 user actions, plus their own state checks, in well under a
+//    minute, far faster than a person; at the production limit they would only measure their own
+//    speed. 429 handling is covered by worker/test/auth.test.ts, and master-cv.spec.js checks the
+//    request budget of the most frequent action, which is what keeps a person inside 120 a minute.
 //
 // Logs go to e2e/logs/worker.log (uploaded by CI when the journey fails).
 import { spawn, spawnSync } from "node:child_process";
@@ -64,6 +69,11 @@ const requireReplace = (pattern, replacement, what) => {
 };
 requireReplace(/^main = "src\/index\.ts"$/m, `main = ${JSON.stringify(path.join(WORKER_DIR, "src", "index.ts"))}`, 'main = "src/index.ts"');
 requireReplace(/^migrations_dir = "migrations"$/m, `migrations_dir = ${JSON.stringify(path.join(WORKER_DIR, "migrations"))}`, 'migrations_dir = "migrations"');
+const API_LIMIT = /(name = "API_RATE_LIMITER"\nnamespace_id = "\d+"\n\n  \[ratelimits\.simple\]\n  limit = )120\n/;
+requireReplace(API_LIMIT, (_, head) => `${head}1200\n`, "API_RATE_LIMITER with limit = 120");
+if (!/name = "AUTH_RATE_LIMITER"\nnamespace_id = "\d+"\n\n  \[ratelimits\.simple\]\n  limit = 10\n/.test(config)) {
+  throw new Error("worker/wrangler.toml: expected AUTH_RATE_LIMITER with limit = 10; update scripts/start-worker.js");
+}
 
 const forbidden = [
   [/^\[ai\]/m, "an [ai] section"],

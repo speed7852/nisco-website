@@ -7,7 +7,9 @@ name: Deploy NISCO Career AI
 # - runs in the "career-ai-production" GitHub Environment (configure required reviewers there);
 # - never cancels a deployment in progress;
 # - uses the Wrangler version pinned in career-ai/worker/package-lock.json;
-# - never creates Cloudflare resources: a missing D1 database or R2 bucket stops the run.
+# - never creates Cloudflare resources: a missing D1 database or R2 bucket stops the run;
+# - stops unless the private R2 bucket has no public r2.dev URL and no custom domain (read-only);
+# - records a D1 Time Travel restore point before applying migrations (read-only).
 on:
   workflow_dispatch:
   push:
@@ -93,6 +95,42 @@ jobs:
             echo "::error::R2 bucket nisco-career-ai-private was not found. Nothing was created."
             exit 1
           fi
+
+      # Read-only. The expected lines are Wrangler's own output (pinned version) for "disabled" and
+      # "no custom domains"; anything else, including an API error, stops the deployment.
+      - name: Confirm the private R2 bucket is not publicly accessible (read-only)
+        run: |
+          set -euo pipefail
+          dev_url=$(npx wrangler r2 bucket dev-url get nisco-career-ai-private 2>&1) || { echo "$dev_url"; echo "::error::Could not read the r2.dev URL status. Nothing was changed."; exit 1; }
+          echo "$dev_url"
+          if ! grep -Fxq "Public access via the r2.dev URL is disabled." <<<"$dev_url"; then
+            echo "::error::Public r2.dev access is not confirmed disabled for nisco-career-ai-private. Nothing was changed; disable it in the Cloudflare dashboard, then re-run."
+            exit 1
+          fi
+          domains=$(npx wrangler r2 bucket domain list nisco-career-ai-private 2>&1) || { echo "$domains"; echo "::error::Could not list custom domains. Nothing was changed."; exit 1; }
+          echo "$domains"
+          if ! grep -Fxq "There are no custom domains connected to this bucket." <<<"$domains"; then
+            echo "::error::A custom domain is connected to nisco-career-ai-private. CV files must stay private. Nothing was changed."
+            exit 1
+          fi
+
+      # Read-only. The bookmark lets the database be restored to the moment before this run's
+      # migrations (docs/DEPLOYMENT.md, "Rolling back migration 0003").
+      - name: Record a D1 restore point and the pending migrations (read-only)
+        run: |
+          set -euo pipefail
+          info=$(npx wrangler d1 time-travel info nisco-career-ai-db --json)
+          bookmark=$(jq -r '.bookmark // empty' <<<"$info")
+          if [ -z "$bookmark" ]; then echo "::error::Could not read a D1 Time Travel bookmark. No migration was applied."; exit 1; fi
+          echo "D1 restore point before migrations: $bookmark"
+          npx wrangler d1 migrations list nisco-career-ai-db --remote
+          {
+            echo "### D1 restore point before migrations"
+            echo ""
+            echo "Bookmark: \`$bookmark\`"
+            echo ""
+            echo "Restore (only with an approved rollback): \`npx wrangler d1 time-travel restore nisco-career-ai-db --bookmark=$bookmark\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Apply pending D1 migrations
         run: npx wrangler d1 migrations apply nisco-career-ai-db --remote

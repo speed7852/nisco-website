@@ -5,7 +5,7 @@ import { htmlToText, truncate } from "../domain/text";
 import { normaliseJobUrl } from "../domain/urls";
 import { finishRun, startRun, type RunStatus } from "../db/discovery-runs";
 import { existingCanonicalUrls, insertJobsIgnoringDuplicates, listJobsNeedingAssessment, type NewJob } from "../db/jobs";
-import { getProfile } from "../db/profile";
+import { getConfirmedProfile } from "../profile/confirmed";
 import { FEED_SOURCES, type FeedSource } from "./feeds";
 import { locationEligibility, matchesRole, roleTerms } from "./filters";
 
@@ -85,7 +85,8 @@ export async function runDiscovery(env: Env, cron: string, deps: DiscoveryDeps =
   };
 
   try {
-    const stored = await getProfile(env.DB);
+    // Confirmed facts only: unreviewed proposals never drive search terms or scoring.
+    const stored = await getConfirmedProfile(env.DB);
     const terms = roleTerms(stored?.profile ?? null);
     const candidates = new Map<string, NewJob>();
 

@@ -2,17 +2,20 @@
   "name": "nisco-career-ai-e2e",
   "version": "0.1.0",
   "private": true,
-  "description": "Browser journey for NISCO Career AI against a local, isolated Worker with production security headers.",
+  "description": "Browser journey and browser-module unit tests for NISCO Career AI, against a local, isolated Worker with production security headers.",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
     "test": "playwright test",
-    "check": "node --check playwright.config.js && node --check e2e.config.js && node --check scripts/start-worker.js && node --check scripts/serve-frontend.js && node --check tests/journey.spec.js"
+    "test:unit": "node --test \"unit/*.test.js\"",
+    "vendor:verify": "node scripts/vendor-pdfjs.js verify",
+    "check": "node --check playwright.config.js && node --check e2e.config.js && node --check scripts/start-worker.js && node --check scripts/serve-frontend.js && node --check scripts/vendor-pdfjs.js && node --check scripts/make-synthetic-cv.js && node --check fixtures/synthetic-docs.js && node --check tests/journey.spec.js && node --check tests/master-cv.spec.js && node --check ../frontend/js/docx.js && node --check ../frontend/js/pdf-text.js && node --check ../frontend/js/extract.js"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
-    "@playwright/test": "1.63.0"
+    "@playwright/test": "1.63.0",
+    "pdfjs-dist": "6.4.299"
   }
 }

@@ -2,8 +2,8 @@ import { AiCallError, extractModelOutput, runChat } from "../ai/client";
 import { buildDraftMessages, DRAFT_TASKS, type DraftTask } from "../ai/prompts";
 import { DRAFT_PROMPT_VERSION } from "../config";
 import { getJob } from "../db/jobs";
-import { getProfile } from "../db/profile";
 import { profileHasFacts } from "../domain/profile";
+import { getConfirmedProfile } from "../profile/confirmed";
 import { readJson } from "../http/body";
 import { conflict, HttpError, notFound } from "../http/errors";
 import { json } from "../http/responses";
@@ -27,9 +27,9 @@ export async function createDraft({ request, env }: RequestContext): Promise<Res
 
   const job = await getJob(env.DB, (body.jobId as string).toLowerCase());
   if (!job) throw notFound("Job");
-  const stored = await getProfile(env.DB);
+  const stored = await getConfirmedProfile(env.DB);
   if (!stored || !profileHasFacts(stored.profile)) {
-    throw conflict("profile_required", "Save your career profile before drafting. Drafts use only saved facts.");
+    throw conflict("profile_required", "Confirm your profile facts before drafting. Drafts use only confirmed facts.");
   }
 
   let output: unknown;

@@ -40,3 +40,15 @@ export async function readJson(request: Request, maxBytes = MAX_JSON_BODY_BYTES)
     throw badRequest("Request body is not valid JSON.");
   }
 }
+
+/** Like readJson, but an empty body is treated as {}. For actions whose body is optional. */
+export async function readOptionalJson(request: Request, maxBytes = MAX_JSON_BODY_BYTES): Promise<unknown> {
+  const bytes = await readBodyBytes(request, maxBytes, `Request body must be smaller than ${Math.round(maxBytes / 1024)} KB.`);
+  const text = new TextDecoder().decode(bytes).trim();
+  if (text === "") return {};
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw badRequest("Request body is not valid JSON.");
+  }
+}

@@ -60,6 +60,7 @@ jobs:
         run: |
           node --check app.js
           node --check config.js
+          for file in js/*.js; do node --check "$file"; done
 
       - name: No personal documents or credentials committed
         working-directory: .
@@ -115,10 +116,16 @@ jobs:
           npm run check
           npm audit --audit-level=high
 
+      - name: Browser-module unit tests (DOCX parser, PDF text joining, extraction outcomes)
+        run: npm run test:unit
+
+      - name: Vendored pdf.js matches the pinned, lockfile-verified package
+        run: npm run vendor:verify
+
       - name: Install Chromium for the pinned Playwright version
         run: npx playwright install --with-deps chromium
 
-      - name: Run the browser journey
+      - name: Run the browser journeys (Phase 1 journey and master CV journey)
         run: npm test
 
       - name: Upload failure evidence (report, screenshots, page state, trace, Worker and server logs)

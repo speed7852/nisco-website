@@ -121,7 +121,32 @@ export async function session(overrides: EnvOverrides = {}) {
   };
 }
 
+/**
+ * Saves the Phase 1 profile AND confirms the same facts in the structured profile. Since Phase 2,
+ * matching, drafts and discovery use only explicitly confirmed facts, so tests that need a usable
+ * profile confirm it, exactly as the user would. Use saveLegacyProfileOnly for the unconfirmed case.
+ */
 export async function saveProfile(api: Awaited<ReturnType<typeof session>>, profile: CareerProfile = SYNTHETIC_PROFILE): Promise<void> {
+  await saveLegacyProfileOnly(api, profile);
+  const facts: [string, string][] = [
+    ["name", profile.name],
+    ["headline", profile.headline],
+    ["years_experience", profile.years === null ? "" : String(profile.years)],
+    ["location_text", profile.location],
+    ["summary", profile.summary],
+    ["skills_text", profile.skills],
+    ["experience_text", profile.experience],
+    ["preferred_titles_text", profile.roles],
+  ];
+  for (const [section, text] of facts) {
+    if (!text) continue;
+    const result = await api.call("POST", "/api/profile/items", { body: { section, value: { text }, replaceConfirmed: true } });
+    if (result.status !== 201) throw new Error(`confirming ${section} failed: ${result.status} ${JSON.stringify(result.body)}`);
+  }
+}
+
+/** Saves only the Phase 1 profile, which is never used for matching until its facts are confirmed. */
+export async function saveLegacyProfileOnly(api: Awaited<ReturnType<typeof session>>, profile: CareerProfile = SYNTHETIC_PROFILE): Promise<void> {
   const result = await api.call("PUT", "/api/profile", { body: profile });
   if (result.status !== 200) throw new Error(`profile save failed: ${result.status}`);
 }
@@ -260,3 +285,69 @@ export function streamOf(bytes: Uint8Array, chunkSize = 64 * 1024): ReadableStre
 }
 
 export const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+// ---- Phase 2: synthetic CVs ----------------------------------------------------------------------
+
+/** A synthetic CV. Every person, employer and number in it is fictional. */
+export const SYNTHETIC_CV_TEXT = `Alex Synthetic
+Programme Manager (synthetic test CV)
+alex.synthetic@example.test | +966 50 000 0000 | https://example.test/alex
+
+SUMMARY
+Synthetic summary for automated tests only. 12+ years of experience in PMO governance.
+
+PROFESSIONAL EXPERIENCE
+Senior Programme Manager at Example Holdings
+Jan 2020 – Present
+• Led a synthetic PMO of 5 people.
+• Ran ITIL service transition for a fictional bank.
+Project Manager | Fictional Bank | 2016 - 2019
+• Delivered a synthetic core-banking upgrade.
+
+EDUCATION
+Example University
+BSc Computer Science, 2012
+
+CERTIFICATIONS
+• PMP (Synthetic Institute), 2018
+• ITIL 4 Foundation
+
+SKILLS
+PMO governance, ITIL; Stakeholder management | Budgeting`;
+
+export async function uploadCv(
+  api: Awaited<ReturnType<typeof session>>,
+  bytes: Uint8Array = syntheticPdf(),
+  name = "Synthetic CV.pdf",
+  type = "application/pdf",
+) {
+  return api.call<{ version: { id: string; file: { documentId: string; name: string; sha256: string } | null } }>("POST", "/api/cv/versions", {
+    rawBody: bytes,
+    headers: { "content-type": type, "x-file-name": /%/.test(name) ? name : encodeURIComponent(name) },
+  });
+}
+
+export async function submitExtraction(
+  api: Awaited<ReturnType<typeof session>>,
+  versionId: string,
+  body: Record<string, unknown> = { status: "extracted", parser: "pdfjs-dist", parserVersion: "6.4.299", text: SYNTHETIC_CV_TEXT, pageCount: 1, warnings: [] },
+) {
+  return api.call<{ proposalsCreated: number; version: { extraction: { status: string; warnings: string[] }; review: { status: string; proposed: number } } }>(
+    "POST",
+    `/api/cv/versions/${versionId}/extraction`,
+    { body },
+  );
+}
+
+export interface ItemDto {
+  id: string;
+  section: string;
+  value: Record<string, string | string[]>;
+  status: string;
+  source: { type: string; cvVersionId: string | null; cvDeleted: boolean; snapshotId: string | null; field: string | null; span: { start: number; end: number } | null };
+  userEdited: boolean;
+}
+
+export async function listProfileItems(api: Awaited<ReturnType<typeof session>>) {
+  return (await api.call<{ items: ItemDto[]; missing: string[]; sections: { section: string; state: string }[] }>("GET", "/api/profile/items")).body;
+}
