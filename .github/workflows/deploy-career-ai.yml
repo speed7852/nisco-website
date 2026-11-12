@@ -141,7 +141,16 @@ jobs:
       - name: Set the private access key secret
         env:
           CAREER_AI_ACCESS_KEY: ${{ secrets.CAREER_AI_ACCESS_KEY }}
-        run: printf '%s' "$CAREER_AI_ACCESS_KEY" | npx wrangler secret put APP_ACCESS_KEY
+        # Right after a Worker upload the secrets API can briefly answer with an unknown error
+        # (code 10013), so retry a few times. The existing secret stays in place on failure.
+        run: |
+          for attempt in 1 2 3 4; do
+            if printf '%s' "$CAREER_AI_ACCESS_KEY" | npx wrangler secret put APP_ACCESS_KEY; then exit 0; fi
+            echo "::warning::Setting APP_ACCESS_KEY failed (attempt $attempt of 4); the existing secret is unchanged."
+            [ "$attempt" -lt 4 ] && sleep $((attempt * 10))
+          done
+          echo "::error::Could not set APP_ACCESS_KEY. The Worker keeps its existing secret; re-run the deployment."
+          exit 1
 
       - name: Deploy Pages app
         working-directory: .
