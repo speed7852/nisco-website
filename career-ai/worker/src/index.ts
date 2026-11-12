@@ -23,5 +23,36 @@ export default {
    return out({error:"not_found"},404,ch);
   }catch(e){console.error(e);return out({error:"internal_error"},500,ch);}
  },
- async scheduled(c:ScheduledController,env:Env){console.log("Career AI scheduled tick",c.cron,new Date(c.scheduledTime).toISOString(),"Job source connectors are not configured; no external jobs fetched.");}
+ async scheduled(c:ScheduledController,env:Env){
+  console.log("Career AI discovery started",c.cron,new Date(c.scheduledTime).toISOString());
+  const roleTerms=["pmo","program manager","project manager","service delivery","it operations","transformation manager","delivery manager","portfolio manager"];
+  const placeTerms=["saudi","riyadh","jeddah","madinah","medina","india","chennai","bengaluru","bangalore","hyderabad","gurgaon","gurugram","remote","worldwide","anywhere","emea"];
+  const feeds=[{name:"Arbeitnow",url:"https://www.arbeitnow.com/api/job-board-api?page=1"},{name:"Remote OK",url:"https://remoteok.com/api"}];
+  let inserted=0,checked=0;
+  for(const feed of feeds){
+   try{
+    const response=await fetch(feed.url,{headers:{"accept":"application/json","user-agent":"NISCO-Career-AI/1.0 personal job discovery"}});
+    if(!response.ok)throw new Error("HTTP "+response.status);
+    const payload:any=await response.json();
+    const rows:any[]=Array.isArray(payload)?payload:(payload.data||payload.jobs||[]);
+    for(const item of rows){
+     if(!item||typeof item!=="object")continue;
+     const title=String(item.title||item.position||"");
+     const company=String(item.company_name||item.company||"Unknown company");
+     const location=String(item.location||item.candidate_required_location||"Remote");
+     const url=String(item.url||item.apply_url||"");
+     const description=String(item.description||item.tags?.join(", ")||title);
+     const remote=!!(item.remote||item.isRemote||/remote|worldwide|anywhere/i.test(location));
+     const t=title.toLowerCase(),l=location.toLowerCase();
+     if(!title||!url.startsWith("https://")||!roleTerms.some(k=>t.includes(k))||!(remote||placeTerms.some(k=>l.includes(k))))continue;
+     checked++;
+     const exists=await env.DB.prepare("SELECT id FROM jobs WHERE url=? LIMIT 1").bind(url).first();
+     if(exists)continue;
+     await env.DB.prepare("INSERT INTO jobs(id,title,company,location,url,description,created_at) VALUES(?,?,?,?,?,?,?)").bind(crypto.randomUUID(),title,company,location,url,description+"\n\nSource: "+feed.name+" · Open original listing for details.",new Date().toISOString()).run();
+     inserted++;
+    }
+   }catch(e){console.error("Job feed failed",feed.name,String(e));}
+  }
+  console.log("Career AI discovery complete",{inserted,checked});
+ }
 };
