@@ -1,0 +1,43 @@
+name: Deploy NISCO Career AI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - career-ai-deploy
+    paths:
+      - "career-ai/**"
+      - ".github/workflows/deploy-career-ai.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nisco-career-ai-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Deploy Career AI Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config career-ai/worker/wrangler.toml
+
+      - name: Deploy Career AI Pages frontend
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy career-ai/frontend --project-name nisco-career-ai --branch main
