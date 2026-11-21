@@ -1,5 +1,5 @@
 const QURAN_API="https://api.alquran.cloud/v1";
-const MP3_API="https://mp3quran.net/api/v3";
+const MP3_API="https://www.mp3quran.net/api/v3";
 const reciters=[
  {id:"shuraim",name:"Sheikh Saud Al-Shuraim",ar:"سعود الشريم",match:["saud al-shuraim","saud ash-shuraim","saud shuraim"]},
  {id:"ghamdi",name:"Sheikh Saad Al-Ghamdi",ar:"سعد الغامدي",match:["saad al ghamdi","saad al-ghamdi","saad ghamdi"]},
@@ -26,12 +26,12 @@ async function getMoshaf(id=state.reciter){
  if(!match)throw Error("The selected reciter was not found in the audio catalogue.");
  const m=(match.moshaf||[]).find(x=>x.server&&Number(x.surah_total)>=1);
  if(!m)throw Error("No audio edition is currently listed for "+wanted.name+".");
- return {...m,reciterName:match.name};
+ moshafCache[id]={...m,reciterName:match.name};return moshafCache[id];
 }
 async function getTimings(surah,id){
- try{const j=await mp3(`/ayat_timing?surah=${surah}&read=${id}`);const rows=Array.isArray(j)?j:(j.ayat_timing||j.data||j.timings||[]);return rows.map(x=>({ayah:Number(x.ayah||x.ayah_number),start:Number(x.start_time||x.startTime||0),end:Number(x.end_time||x.endTime||0)})).filter(x=>x.ayah&&x.end>x.start)}catch{return []}
+ try{const j=await mp3(`/ayat_timing?surah=${surah}&read=${id}`);const rows=Array.isArray(j)?j:(j.ayat_timing||j.data||j.timings||[]);timingCache[key]=rows.map(x=>({ayah:Number(x.ayah||x.ayah_number),start:Number(x.start_time||x.startTime||0),end:Number(x.end_time||x.endTime||0)})).filter(x=>x.ayah&&x.end>x.start);return timingCache[key]}catch{timingCache[key]=[];return []}
 }
-let currentMoshaf=null,currentAudioUrl="";
+let currentMoshaf=null,currentAudioUrl="",activeBlobUrl="",activeSourceKey="",timingCache={},moshafCache={};
 async function prepareAudio(){
  currentMoshaf=await getMoshaf();
  const coverage=String(currentMoshaf.surah_list||"");
@@ -42,7 +42,7 @@ async function prepareAudio(){
 }
 async function loadSurah(n,force=false){
  if(!force&&state.surah===n&&ayahs.length)return;
- state.surah=n;state.ayah=1;save();
+ audio.pause();state.surah=n;state.ayah=1;save();
  try{
   const [ar,en]=await Promise.all([quran(`/surah/${n}/quran-uthmani`),quran(`/surah/${n}/en.sahih`)]);
   ayahs=ar.ayahs.map((a,i)=>({...a,translation:en.ayahs[i]?.text||""}));
