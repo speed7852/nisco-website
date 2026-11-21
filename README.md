@@ -29,6 +29,18 @@ Portfolio descriptions deliberately distinguish delivered work from concepts and
 
 The Cloudflare Pages Git integration/deployment status must be checked in the Cloudflare dashboard; a GitHub commit alone does not prove that the live website has deployed. The previous summit photograph remains in assets/nisco-hero.jpg as an unused legacy file; the homepage now references the Riyadh skyline image.
 
+## Zain Quran PWA
+
+A separate installable Quran companion is available at **/zain-quran/**. It is kept in its own directory and does not replace the NISCO homepage or the NISCO AI Worker.
+
+- Installable PWA with Arabic Uthmani text and Sahih International English translation.
+- Daily reading goal, local reading-time tracking, streak, bookmarks and reciter selector.
+- Reciters are resolved from the MP3Quran v3 catalogue; the app prefers complete Surah recordings and uses the ayah timing endpoint for verse navigation and repeat.
+- Audio downloads are user-initiated and stored in the browser Cache API on the device. Browser/provider CORS and available storage can affect offline saving.
+- Quran text is served by Al Quran Cloud. The app does not rehost Quran or recitation media.
+
+The app uses the existing static Cloudflare Pages project and is served under the /zain-quran/ path. See [zain-quran/README.md](zain-quran/README.md) for implementation details.
+
 ## Run locally
 
 No root-level dependencies are required.
