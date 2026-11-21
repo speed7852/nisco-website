@@ -59,8 +59,16 @@ async function loadSurah(n,force=false){
 }
 function beginSession(){
  if(activeStarted)return;activeStarted=true;
- if(state.lastDate!==today()){const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);state.streak=state.lastDate===yesterday?state.streak+1:1;state.lastDate=today();save()}
- beginSession.timer=setInterval(()=>{if(document.visibilityState==="visible"&&state.tab==="read"){state.minutes++;save();if(state.minutes%state.goal===0){toast("Alhamdulillah — daily reading goal reached.");render()}}},60000);
+ beginSession.timer=setInterval(()=>{
+  if(document.visibilityState==="visible"&&state.tab==="read"){
+   if(state.lastDate!==today()){
+    const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    state.streak=state.lastDate===yesterday?state.streak+1:1;state.lastDate=today();state.minutes=0;
+   }
+   state.minutes++;save();
+   if(state.minutes%state.goal===0){toast("Alhamdulillah — daily reading goal reached.");render()}
+  }
+ },60000);
 }
 function stopSession(){activeStarted=false;if(beginSession.timer){clearInterval(beginSession.timer);beginSession.timer=null}}
 function progress(){return Math.min(100,Math.round(state.minutes/state.goal*100))}
@@ -86,6 +94,7 @@ async function playCurrent(){
   if(audio.src!==src){audio.pause();audio.src=src;await new Promise((resolve,reject)=>{audio.onloadedmetadata=resolve;audio.onerror=()=>reject(Error("Audio file could not be loaded."));});}
   const timing=timings.find(x=>x.ayah===state.ayah);
   if(timing)audio.currentTime=timing.start/1000;
+  else if(state.ayah!==1){state.ayah=1;save();toast("This recitation is available as a full Surah; verse-level timings are not provided.");}
   audio.playbackRate=state.speed;await audio.play();render();
  }catch(e){toast(e.message+" Try another reciter or check your connection.")}
 }
@@ -136,7 +145,7 @@ audio.addEventListener("timeupdate",()=>{
   else if(state.ayah<ayahs.length){state.ayah++;save();render();const next=timings.find(x=>x.ayah===state.ayah);if(next)audio.currentTime=next.start/1000}
  }
 });
-audio.addEventListener("ended",()=>{if(timings.length&&state.ayah<ayahs.length){state.ayah++;save();playCurrent()}else toast("You reached the end of this Surah. Alhamdulillah.")});
+audio.addEventListener("ended",()=>{if(!timings.length&&state.repeat){audio.currentTime=0;audio.play();return}if(timings.length&&state.ayah<ayahs.length){state.ayah++;save();playCurrent()}else toast("You reached the end of this Surah. Alhamdulillah.")});
 audio.addEventListener("play",()=>{const p=document.querySelector(".controls .play");if(p)p.textContent="Ⅱ"});
 audio.addEventListener("pause",()=>{const p=document.querySelector(".controls .play");if(p)p.textContent="▶"});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")stopSession();else if(state.tab==="read")beginSession()});
