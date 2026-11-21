@@ -46,7 +46,7 @@ test("offline audio is user-initiated and stored locally", () => {
   assert.match(app, /data-action="download"/);
   assert.match(app, /caches\.open\("zain-quran-audio"\)/);
   assert.match(app, /cache\.put\(url,r\)/);
-  assert.match(sw, /zain-quran-audio/);
+  assert.match(sw, /zain-quran-text/);
 });
 
 test("content security policy permits only the Quran content and recitation API hosts needed by the app", () => {
