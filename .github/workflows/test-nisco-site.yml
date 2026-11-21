@@ -20,6 +20,9 @@ on:
       - "script.js"
       - "assets/**"
       - "tests/site.test.js"
+      - "tests/zain-quran.test.js"
+      - "zain-quran/**"
+      - "_headers"
       - "nisco-ai/**"
       - ".github/workflows/test-nisco-site.yml"
   workflow_dispatch:
