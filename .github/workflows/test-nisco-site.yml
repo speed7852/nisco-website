@@ -8,6 +8,9 @@ on:
       - "script.js"
       - "assets/**"
       - "tests/site.test.js"
+      - "tests/zain-quran.test.js"
+      - "zain-quran/**"
+      - "_headers"
       - "nisco-ai/**"
       - ".github/workflows/test-nisco-site.yml"
   pull_request:
@@ -17,6 +20,9 @@ on:
       - "script.js"
       - "assets/**"
       - "tests/site.test.js"
+      - "tests/zain-quran.test.js"
+      - "zain-quran/**"
+      - "_headers"
       - "nisco-ai/**"
       - ".github/workflows/test-nisco-site.yml"
   workflow_dispatch:
@@ -34,4 +40,6 @@ jobs:
           node --check assets/nisco-chat.js
           node --check assets/nisco-india-config.js
           node --check nisco-ai/src/index.js
-          node --test tests/site.test.js nisco-ai/src/index.test.js
+          node --check zain-quran/app.js
+          node --check zain-quran/sw.js
+          node --test tests/site.test.js tests/zain-quran.test.js nisco-ai/src/index.test.js

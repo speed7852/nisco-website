@@ -1,0 +1,11 @@
+{
+  "name":"Zain Quran",
+  "short_name":"Zain Quran",
+  "description":"A calm Quran reading and listening companion",
+  "start_url":"./",
+  "scope":"./",
+  "display":"standalone",
+  "background_color":"#f7f5ef",
+  "theme_color":"#174b3b",
+  "icons":[{"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}

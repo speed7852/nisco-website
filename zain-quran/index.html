@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f5ef"><meta name="description" content="Zain Quran — a calm Quran reading and listening companion.">
+<link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg" type="image/svg+xml">
+<title>Zain Quran</title><link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="app">
+<header class="top"><a class="brand" href="#home"><span class="mark">۞</span><span><b>Zain Quran</b><small>Your daily connection</small></span></a><button id="installBtn" class="quiet hidden">Install app</button></header>
+<main id="view" aria-live="polite"><div class="loading">Loading your Quran journey…</div></main>
+<nav class="nav" aria-label="Main navigation">
+<button data-tab="home" class="active"><span>⌂</span>Home</button><button data-tab="read"><span>۞</span>Read</button><button data-tab="listen"><span>♫</span>Listen</button><button data-tab="saved"><span>▣</span>Saved</button><button data-tab="settings"><span>⚙</span>Settings</button>
+</nav>
+<div id="toast" class="toast" role="status"></div>
+<audio id="audio" preload="none"></audio>
+</div>
+<script src="./app.js" defer></script>
+</body></html>
