@@ -25,7 +25,7 @@ async function getMoshaf(id=state.reciter){
  const list=await loadCatalog(),wanted=reciters.find(r=>r.id===id)||reciters[3];
  const match=list.find(x=>wanted.match.some(t=>norm(x.name).includes(norm(t))));
  if(!match)throw Error("The selected reciter was not found in the audio catalogue.");
- const m=(match.moshaf||[]).find(x=>x.server&&Number(x.surah_total)>=1);
+ const editions=match.moshaf||[];const m=editions.find(x=>x.server&&Number(x.surah_total)>=114)||editions.find(x=>x.server&&Number(x.surah_total)>=1);
  if(!m)throw Error("No audio edition is currently listed for "+wanted.name+".");
  moshafCache[id]={...m,reciterName:match.name};return moshafCache[id];
 }
@@ -108,7 +108,7 @@ view.addEventListener("click",async e=>{
  if(b.dataset.reciter){state.reciter=b.dataset.reciter;save();render();return}
  if(b.dataset.goal){state.goal=Number(b.dataset.goal);save();render();return}
  if(b.dataset.bookmark){const k=b.dataset.bookmark;state.bookmarks=state.bookmarks.includes(k)?state.bookmarks.filter(x=>x!==k):[...state.bookmarks,k];save();render();return}
- if(b.dataset.openBookmark){const [s,a]=b.dataset.openBookmark.split(":").map(Number);state.surah=s;state.ayah=a;state.tab="read";save();await loadSurah(s,true);return}
+ if(b.dataset.openBookmark){const [s,a]=b.dataset.openBookmark.split(":").map(Number);state.surah=s;state.tab="read";save();await loadSurah(s,true);state.ayah=a;state.lastRead=`${surahs.find(x=>x.number===s)?.englishName||"Surah "+s} · ${a}`;save();render();return}
  if(b.dataset.playAyah){state.ayah=Number(b.dataset.playAyah);state.tab="listen";save();render();playCurrent();return}
  switch(b.dataset.action){
  case"continue":state.tab="read";render();break;
