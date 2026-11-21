@@ -18,25 +18,31 @@ function toast(s){toastEl.textContent=s;toastEl.classList.add("show");clearTimeo
 async function getJson(url){const r=await fetch(url);if(!r.ok)throw Error("Content service returned "+r.status);return r.json()}
 async function quran(path){const j=await getJson(QURAN_API+path);if(j.code!==200)throw Error(j.status||"Unable to load Quran");return j.data}
 async function mp3(path){return getJson(MP3_API+path)}
-async function loadCatalog(){if(catalog)return catalog;const j=await mp3("/reciters?language=eng");catalog=j.reciters||[];return catalog}
+async function loadCatalog(){
+ if(catalog)return catalog;
+ try{const j=await mp3("/reciters?language=eng");catalog=j.reciters||[];localStorage.setItem("zq-reciter-catalog",JSON.stringify(catalog));return catalog}
+ catch(e){const saved=localStorage.getItem("zq-reciter-catalog");if(saved){catalog=JSON.parse(saved);return catalog}throw e}
+}
 function norm(s){return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}
 async function getMoshaf(id=state.reciter){
  if(moshafCache[id])return moshafCache[id];
+ try{const saved=JSON.parse(localStorage.getItem("zq-moshaf-cache")||"{}");if(saved[id]){moshafCache[id]=saved[id];return moshafCache[id]}}catch{}
  const list=await loadCatalog(),wanted=reciters.find(r=>r.id===id)||reciters[3];
  const match=list.find(x=>wanted.match.some(t=>norm(x.name).includes(norm(t))));
  if(!match)throw Error("The selected reciter was not found in the audio catalogue.");
  const editions=match.moshaf||[];const m=editions.find(x=>x.server&&Number(x.surah_total)>=114)||editions.find(x=>x.server&&Number(x.surah_total)>=1);
  if(!m)throw Error("No audio edition is currently listed for "+wanted.name+".");
- moshafCache[id]={...m,reciterName:match.name};return moshafCache[id];
+ moshafCache[id]={...m,reciterName:match.name};const saved=JSON.parse(localStorage.getItem("zq-moshaf-cache")||"{}");saved[id]=moshafCache[id];localStorage.setItem("zq-moshaf-cache",JSON.stringify(saved));return moshafCache[id];
 }
 async function getTimings(surah,id){
  const key=state.reciter+":"+surah;
  if(Object.prototype.hasOwnProperty.call(timingCache,key))return timingCache[key];
+ try{const saved=localStorage.getItem("zq-timings-"+key);if(saved){timingCache[key]=JSON.parse(saved);return timingCache[key]}}catch{}
  try{
   const j=await mp3(`/ayat_timing?surah=${surah}&read=${id}`);
   const rows=Array.isArray(j)?j:(j.ayat_timing||j.data||j.timings||[]);
   timingCache[key]=rows.map(x=>({ayah:Number(x.ayah||x.ayah_number),start:Number(x.start_time||x.startTime||0),end:Number(x.end_time||x.endTime||0)})).filter(x=>x.ayah&&x.end>x.start);
-  return timingCache[key];
+  localStorage.setItem("zq-timings-"+key,JSON.stringify(timingCache[key]));return timingCache[key];
  }catch{timingCache[key]=[];return []}
 }
 let currentMoshaf=null,currentAudioUrl="",activeBlobUrl="",activeSourceKey="",timingCache={},moshafCache={};
