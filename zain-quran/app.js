@@ -58,9 +58,14 @@ async function loadSurah(n,force=false){
  if(!force&&state.surah===n&&ayahs.length)return;
  audio.pause();state.surah=n;state.ayah=1;save();
  try{
-  const [ar,en]=await Promise.all([quran(`/surah/${n}/quran-uthmani`),quran(`/surah/${n}/en.sahih`)]);
-  ayahs=ar.ayahs.map((a,i)=>({...a,translation:en.ayahs[i]?.text||""}));
-  state.lastRead=`${ar.englishName} · 1:1`;save();render();
+  try{
+   const [ar,en]=await Promise.all([quran(`/surah/${n}/quran-uthmani`),quran(`/surah/${n}/en.sahih`)]);
+   ayahs=ar.ayahs.map((a,i)=>({...a,translation:en.ayahs[i]?.text||""}));
+   localStorage.setItem("zq-surah-"+n,JSON.stringify(ayahs));
+  }catch(networkError){
+   const cached=localStorage.getItem("zq-surah-"+n);if(!cached)throw networkError;ayahs=JSON.parse(cached);
+  }
+  state.lastRead=`${surahs.find(x=>x.number===n)?.englishName||"Surah "+n} · 1:1`;save();render();
  }catch(e){toast(e.message)}
 }
 function beginSession(){
@@ -158,4 +163,4 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();window.deferredInstall=e;document.querySelector("#installBtn").classList.remove("hidden")});
 document.querySelector("#installBtn").addEventListener("click",async()=>{if(!window.deferredInstall)return;window.deferredInstall.prompt();await window.deferredInstall.userChoice;window.deferredInstall=null;document.querySelector("#installBtn").classList.add("hidden")});
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
-(async()=>{try{surahs=await quran("/surah");await loadSurah(state.surah,true);render()}catch(e){view.innerHTML=`<div class="empty"><h2>Unable to connect</h2><p>${esc(e.message)}. Connect once to the internet to load Quran text.</p><button class="soft" onclick="location.reload()">Try again</button></div>`}})();
+(async()=>{try{try{surahs=await quran("/surah");localStorage.setItem("zq-surah-list",JSON.stringify(surahs))}catch(e){const cached=localStorage.getItem("zq-surah-list");if(!cached)throw e;surahs=JSON.parse(cached)}await loadSurah(state.surah,true);render()}catch(e){view.innerHTML=`<div class="empty"><h2>Unable to connect</h2><p>${esc(e.message)}. Connect once to the internet to load Quran text.</p><button class="soft" onclick="location.reload()">Try again</button></div>`}})();
