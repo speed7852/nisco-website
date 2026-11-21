@@ -30,7 +30,7 @@ No login, analytics or remote user database is used. Reading goals, streaks and 
 
 ## Known limitations
 
-- Streak and reading time are device-local. Reading time counts while the reader screen is visible; it does not sync across devices.
+- Streak, reading time, bookmarks and cached Surah text are device-local. A Surah must be opened online once to be available offline; progress does not sync across devices.
 - Audio playback uses the provider's complete Surah file and timing metadata for verse-level navigation. If timing metadata is unavailable for a particular recitation, the app may play the Surah as a continuous recording.
 - Offline download can fail if a provider blocks browser CORS requests or the device has insufficient storage.
 - Push notifications and background reminder scheduling are not enabled.
