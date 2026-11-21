@@ -21,6 +21,7 @@ async function mp3(path){return getJson(MP3_API+path)}
 async function loadCatalog(){if(catalog)return catalog;const j=await mp3("/reciters?language=eng");catalog=j.reciters||[];return catalog}
 function norm(s){return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}
 async function getMoshaf(id=state.reciter){
+ if(moshafCache[id])return moshafCache[id];
  const list=await loadCatalog(),wanted=reciters.find(r=>r.id===id)||reciters[3];
  const match=list.find(x=>wanted.match.some(t=>norm(x.name).includes(norm(t))));
  if(!match)throw Error("The selected reciter was not found in the audio catalogue.");
@@ -29,7 +30,14 @@ async function getMoshaf(id=state.reciter){
  moshafCache[id]={...m,reciterName:match.name};return moshafCache[id];
 }
 async function getTimings(surah,id){
- try{const j=await mp3(`/ayat_timing?surah=${surah}&read=${id}`);const rows=Array.isArray(j)?j:(j.ayat_timing||j.data||j.timings||[]);timingCache[key]=rows.map(x=>({ayah:Number(x.ayah||x.ayah_number),start:Number(x.start_time||x.startTime||0),end:Number(x.end_time||x.endTime||0)})).filter(x=>x.ayah&&x.end>x.start);return timingCache[key]}catch{timingCache[key]=[];return []}
+ const key=state.reciter+":"+surah;
+ if(Object.prototype.hasOwnProperty.call(timingCache,key))return timingCache[key];
+ try{
+  const j=await mp3(`/ayat_timing?surah=${surah}&read=${id}`);
+  const rows=Array.isArray(j)?j:(j.ayat_timing||j.data||j.timings||[]);
+  timingCache[key]=rows.map(x=>({ayah:Number(x.ayah||x.ayah_number),start:Number(x.start_time||x.startTime||0),end:Number(x.end_time||x.endTime||0)})).filter(x=>x.ayah&&x.end>x.start);
+  return timingCache[key];
+ }catch{timingCache[key]=[];return []}
 }
 let currentMoshaf=null,currentAudioUrl="",activeBlobUrl="",activeSourceKey="",timingCache={},moshafCache={};
 async function prepareAudio(){
@@ -67,7 +75,14 @@ async function playCurrent(){
  if(!ayahs.length){await loadSurah(state.surah,true);if(!ayahs.length)return}
  try{
   const url=await prepareAudio(),cache=await caches.open("zain-quran-audio"),hit=await cache.match(url);
-  const src=hit?URL.createObjectURL(await hit.blob()):url;
+  let src=url;
+  if(hit){
+   if(activeSourceKey!==url){if(activeBlobUrl)URL.revokeObjectURL(activeBlobUrl);activeBlobUrl=URL.createObjectURL(await hit.blob());activeSourceKey=url;}
+   src=activeBlobUrl;
+  }else{
+   if(activeBlobUrl)URL.revokeObjectURL(activeBlobUrl);
+   activeBlobUrl="";activeSourceKey="";
+  }
   if(audio.src!==src){audio.pause();audio.src=src;await new Promise((resolve,reject)=>{audio.onloadedmetadata=resolve;audio.onerror=()=>reject(Error("Audio file could not be loaded."));});}
   const timing=timings.find(x=>x.ayah===state.ayah);
   if(timing)audio.currentTime=timing.start/1000;
@@ -121,7 +136,7 @@ audio.addEventListener("timeupdate",()=>{
   else if(state.ayah<ayahs.length){state.ayah++;save();render();const next=timings.find(x=>x.ayah===state.ayah);if(next)audio.currentTime=next.start/1000}
  }
 });
-audio.addEventListener("ended",()=>{if(state.ayah<ayahs.length){state.ayah++;save();playCurrent()}else toast("You reached the end of this Surah. Alhamdulillah.")});
+audio.addEventListener("ended",()=>{if(timings.length&&state.ayah<ayahs.length){state.ayah++;save();playCurrent()}else toast("You reached the end of this Surah. Alhamdulillah.")});
 audio.addEventListener("play",()=>{const p=document.querySelector(".controls .play");if(p)p.textContent="Ⅱ"});
 audio.addEventListener("pause",()=>{const p=document.querySelector(".controls .play");if(p)p.textContent="▶"});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")stopSession();else if(state.tab==="read")beginSession()});
