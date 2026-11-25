@@ -115,7 +115,8 @@ test("approved premium hero uses Riyadh skyline photography, not the legacy summ
 
 test("WhatsApp contact is available on desktop and mobile with the approved number", () => {
   assert.match(html, /class="whatsapp-contact"/);
-  assert.match(html, /https:\/\/wa\.me\/918144477767/);\n  assert.match(html, /Thank%20you%20for%20getting%20in%20touch/);
+  assert.match(html, /https:\/\/wa\.me\/918144477767/);
+  assert.match(html, /Thank%20you%20for%20getting%20in%20touch/);
   assert.match(html, /aria-label="Chat on WhatsApp"/);
   assert.match(html, /target="_blank" rel="noopener noreferrer"/);
   assert.match(css, /\.whatsapp-contact\{position:fixed;left:24px;bottom:22px/);
