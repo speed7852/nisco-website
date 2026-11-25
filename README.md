@@ -29,41 +29,33 @@ Portfolio descriptions deliberately distinguish delivered work from concepts and
 
 The Cloudflare Pages Git integration/deployment status must be checked in the Cloudflare dashboard; a GitHub commit alone does not prove that the live website has deployed. The previous summit photograph remains in assets/nisco-hero.jpg as an unused legacy file; the homepage now references the Riyadh skyline image.
 
-## Zain Quran PWA
+## Zain Quran retirement
 
-A separate installable Quran companion is available at **/zain-quran/**. It is kept in its own directory and does not replace the NISCO homepage or the NISCO AI Worker.
-
-- Installable PWA with Arabic Uthmani text and Sahih International English translation.
-- Daily reading goal, local reading-time tracking, streak, bookmarks and reciter selector.
-- Reciters are resolved from the MP3Quran v3 catalogue; the app prefers complete Surah recordings and uses the ayah timing endpoint for verse navigation and repeat.
-- Audio downloads are user-initiated and stored in the browser Cache API on the device. Browser/provider CORS and available storage can affect offline saving.
-- Quran text is served by Al Quran Cloud. The app does not rehost Quran or recitation media.
-
-The app uses the existing static Cloudflare Pages project and is served under the /zain-quran/ path. See [zain-quran/README.md](zain-quran/README.md) for implementation details.
+The Zain Quran PWA has been retired and its application assets and feature tests have been removed. The remaining /zain-quran/ retirement endpoint exists temporarily only to unregister the previously installed service worker and clear its local app caches on returning devices. It is not an active application. After the retirement release has propagated and old installations have had an opportunity to clean up, the temporary endpoint can be removed in a later cleanup.
 
 ## Run locally
 
 No root-level dependencies are required.
 
-\`\`\`bash
+```bash
 python -m http.server 8000
-\`\`\`
+```
 
 Open http://localhost:8000.
 
 Run the homepage regression tests:
 
-\`\`\`bash
+```bash
 node --test tests/site.test.js
-\`\`\`
+```
 
 Run the AI Worker tests and local development server from nisco-ai/:
 
-\`\`\`bash
+```bash
 cd nisco-ai
 npm test
 npx wrangler dev
-\`\`\`
+```
 
 The Worker tests use mocked services; they do not submit real enquiries or modify production D1 data.
 
@@ -149,7 +141,7 @@ Prices are indicative, not fixed quotations. Confirm scope, third-party costs, t
 
 ## Project structure
 
-\`\`\`
+```
 nisco-website/
 ├── index.html
 ├── styles.css
@@ -185,4 +177,4 @@ nisco-website/
     ├── tests/
     ├── package.json
     └── wrangler.toml
-\`\`\`
+```
