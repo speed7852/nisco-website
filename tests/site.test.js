@@ -111,3 +111,14 @@ test("approved premium hero uses Riyadh skyline photography, not the legacy summ
   assert.doesNotMatch(html, /flag-caption|flags over a Riyadh skyline/);
   assert.doesNotMatch(css, /\.why-image:before|\.why-image:after/);
 });
+
+
+test("WhatsApp contact is available on desktop and mobile with the approved number", () => {
+  assert.match(html, /class="whatsapp-contact"/);
+  assert.match(html, /https:\/\/wa\.me\/918144477767/);
+  assert.match(html, /aria-label="Chat with NISCO on WhatsApp"/);
+  assert.match(html, /target="_blank" rel="noopener noreferrer"/);
+  assert.match(css, /\.whatsapp-contact\{position:fixed;left:24px;bottom:22px/);
+  assert.match(css, /@media\(max-width:760px\)\{\.whatsapp-contact/);
+  assert.match(html, /class="nisco-chat-launcher"/);
+});
