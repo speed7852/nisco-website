@@ -42,7 +42,8 @@ test("enquiry form collects consent and submits directly to NISCO", () => {
   assert.match(html, /nisco\.in@outlook\.com/);
   assert.match(script, /\/enquiry/);
   assert.match(script, /Sending your enquiry securely to NISCO/);
-  assert.doesNotMatch(html, /Catchnoor@live\.in|98945\s?77373|wa\.me/i);
+  assert.doesNotMatch(html, /Catchnoor@live\.in|98945\s?77373/i);
+  assert.match(html, /https:\/\/wa\.me\/918144477767/);
 });
 
 test("portfolio examples are accurately qualified", () => {
