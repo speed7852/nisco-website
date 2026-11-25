@@ -81,3 +81,12 @@
 .services-note{margin:12px 2px 0;color:#4f5b6a;font-size:10px;line-height:1.5}
 @media(max-width:760px){.service-card{min-height:278px}.service-card p{min-height:0}}
 @media(max-width:480px){.service-grid{grid-template-columns:1fr}.service-card{min-height:0}.service-card p{min-height:0}}
+
+
+/* WhatsApp contact shortcut: kept bottom-left so it never overlaps the NISCO AI launcher. */
+.whatsapp-contact{position:fixed;left:24px;bottom:22px;z-index:999;display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:52px;padding:0 18px;border:1px solid rgba(255,255,255,.22);border-radius:28px;background:#25d366;color:#073b22;box-shadow:0 9px 28px rgba(2,13,24,.25);font:800 12px var(--sans);text-decoration:none;transition:transform .2s,box-shadow .2s}
+.whatsapp-contact:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(2,13,24,.3)}
+.whatsapp-contact svg{width:23px;height:23px;flex:0 0 23px}
+.whatsapp-contact:focus-visible{outline:3px solid #0b2942;outline-offset:3px}
+@media(max-width:760px){.whatsapp-contact{left:14px;bottom:14px;min-height:48px;padding:0 15px;font-size:11px;gap:7px}.whatsapp-contact svg{width:21px;height:21px;flex-basis:21px}}
+@media(prefers-reduced-motion:reduce){.whatsapp-contact{transition:none}.whatsapp-contact:hover{transform:none}}
