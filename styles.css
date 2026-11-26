@@ -83,11 +83,10 @@
 @media(max-width:480px){.service-grid{grid-template-columns:1fr}.service-card{min-height:0}.service-card p{min-height:0}}
 
 
-/* Premium WhatsApp shortcut: balanced with NISCO's navy-and-gold identity. */
-.whatsapp-contact{position:fixed;left:24px;bottom:22px;z-index:999;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 21px 0 17px;border:1px solid rgba(255,255,255,.72);border-radius:999px;background:linear-gradient(135deg,#30df78 0%,#18b85b 58%,#0c9d50 100%);color:#062f1b;box-shadow:0 10px 28px rgba(3,24,18,.24),inset 0 1px 0 rgba(255,255,255,.35);font:800 12px var(--sans);letter-spacing:.15px;text-decoration:none;transition:transform .22s ease,box-shadow .22s ease,filter .22s ease}
-.whatsapp-contact:hover{transform:translateY(-3px);filter:saturate(1.08);box-shadow:0 14px 34px rgba(3,24,18,.3),inset 0 1px 0 rgba(255,255,255,.4)}
-.whatsapp-contact svg{width:26px;height:26px;flex:0 0 26px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.12))}
-.whatsapp-contact span{white-space:nowrap}
+/* Compact floating WhatsApp shortcut: icon-only on desktop and mobile. */
+.whatsapp-contact{position:fixed;left:24px;bottom:22px;z-index:999;display:flex;align-items:center;justify-content:center;width:48px;height:48px;padding:0;border:1px solid rgba(255,255,255,.72);border-radius:50%;background:linear-gradient(135deg,#30df78 0%,#18b85b 58%,#0c9d50 100%);color:#062f1b;box-shadow:0 8px 22px rgba(3,24,18,.22),inset 0 1px 0 rgba(255,255,255,.35);text-decoration:none;transition:transform .22s ease,box-shadow .22s ease,filter .22s ease}
+.whatsapp-contact:hover{transform:translateY(-2px);filter:saturate(1.08);box-shadow:0 11px 27px rgba(3,24,18,.28),inset 0 1px 0 rgba(255,255,255,.4)}
+.whatsapp-contact svg{width:23px;height:23px;flex:0 0 23px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.12))}
 .whatsapp-contact:focus-visible{outline:3px solid #e7b650;outline-offset:4px}
-@media(max-width:760px){.whatsapp-contact{left:14px;bottom:14px;min-height:52px;padding:0 17px 0 14px;font-size:11px;gap:8px}.whatsapp-contact svg{width:24px;height:24px;flex-basis:24px}}
+@media(max-width:760px){.whatsapp-contact{left:14px;bottom:14px;width:44px;height:44px}.whatsapp-contact svg{width:21px;height:21px;flex-basis:21px}}
 @media(prefers-reduced-motion:reduce){.whatsapp-contact{transition:none}.whatsapp-contact:hover{transform:none}}
